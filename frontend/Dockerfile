@@ -2,8 +2,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install ts-node globally
-RUN npm install -g ts-node typescript
+# Install OpenSSL and ts-node globally
+RUN apk add --no-cache openssl && npm install -g ts-node typescript
 
 # Copy package.json files
 COPY package.json package-lock.json ./

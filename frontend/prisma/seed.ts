@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -13,11 +14,15 @@ async function main() {
       console.log('既存のデータが存在しないか、テーブルが作成されていません');
     }
 
+    // パスワードをハッシュ化
+    const hashedPassword = await hash('password!23', 10);
+
     // ユーザーの作成
     const user1 = await prisma.user.create({
       data: {
         name: '山田太郎',
         email: 'yamada@example.com',
+        password: hashedPassword,
         posts: {
           create: [
             {
@@ -39,6 +44,7 @@ async function main() {
       data: {
         name: '佐藤花子',
         email: 'sato@example.com',
+        password: hashedPassword,
         posts: {
           create: [
             {
