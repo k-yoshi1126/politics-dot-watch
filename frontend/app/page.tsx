@@ -6,18 +6,18 @@ import { VoteButtons } from "@/components/vote-buttons"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, User } from "lucide-react"
 import { cookies } from "next/headers"
-import { getUserVotes } from "@/lib/auth"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/pages/api/auth/[...nextauth]"
 import { CategoryTabs, MobileCategoryTabs } from "@/components/category-tabs"
 
 import React from 'react'
 
-export default function Home(): React.JSX.Element {
-  const cookieStore = cookies()
-  const userCookie = cookieStore.get("currentUser")
-  const currentUser = userCookie ? JSON.parse(userCookie.value) : null
-
-  // ユーザーの投票情報を取得
-  const userVotes = currentUser ? getUserVotes(currentUser.id) : []
+export default async function Home(): Promise<React.JSX.Element> {
+  const session = await getServerSession(authOptions)
+  const currentUser = session?.user || null
+  // TODO: 投票機能の実装後に有効化
+  // const userVotes = currentUser ? getUserVotes(currentUser.id) : []
+  const userVotes: { billId: string; vote: "agree" | "disagree" | null }[] = []
 
   // 実際の実装ではAPIからデータを取得します
   const featuredBill = {
@@ -186,7 +186,6 @@ export default function Home(): React.JSX.Element {
                     billId={featuredBill.id}
                     compact
                     initialVote={featuredBillVote}
-                    currentUser={currentUser}
                   />
                 </div>
               </div>
@@ -244,7 +243,11 @@ export default function Home(): React.JSX.Element {
                               <span>{bill.submittedDate}</span>
                             </div>
                           </div>
-                          <VoteButtons billId={bill.id} compact initialVote={billVote} currentUser={currentUser} />
+                          <VoteButtons 
+                            billId={bill.id} 
+                            compact 
+                            initialVote={billVote} 
+                          />
                         </div>
                       </div>
                     </div>

@@ -24,7 +24,7 @@ export default function BillPage({ params }: BillPageProps) {
   const userVotes = currentUser ? getUserVotes(currentUser.id) : []
 
   // この法案への投票を取得
-  const billVote = userVotes.find((v) => v.billId === params.id)?.vote || null
+  const billVote = (userVotes.find((v) => v.billId === params.id)?.vote || null) as "agree" | "disagree" | null
 
   // 実際の実装ではAPIからデータを取得します
   const bill = {
@@ -146,7 +146,7 @@ export default function BillPage({ params }: BillPageProps) {
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
-          <VoteButtons billId={bill.id} initialVote={billVote} currentUser={currentUser} />
+          <VoteButtons billId={bill.id} initialVote={billVote} />
         </div>
 
         <Tabs defaultValue="summary" className="mb-8">

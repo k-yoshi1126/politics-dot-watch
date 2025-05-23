@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { signIn } from "next-auth/react"
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -24,42 +25,34 @@ export function LoginForm() {
     setIsLoading(true)
     setLoginError("")
 
+    console.log("[DEBUG] Login attempt with:", {
+      email,
+      hasPassword: !!password,
+    })
+
     try {
-      console.log("[DEBUG] ログイン処理開始")
-      console.log("[DEBUG] ログイン試行:", { email })
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       })
 
-      console.log("[DEBUG] レスポンス受信:", response.status)
-      const data = await response.json()
-      console.log("[DEBUG] ログインレスポンス:", data)
+      console.log("[DEBUG] SignIn result:", result)
 
-      if (data.success) {
-        console.log("[DEBUG] ログイン成功")
+      if (result?.error) {
+        console.log("[DEBUG] Login error:", result.error)
+        setLoginError("メールアドレスまたはパスワードが正しくありません")
+      } else {
+        console.log("[DEBUG] Login successful, redirecting to /mypage")
         toast({
           title: "ログイン成功",
-          description: `ようこそ、${data.user.name}さん`,
+          description: "ようこそ戻ってきました",
         })
-
-        console.log("[DEBUG] マイページへの遷移を試みます")
-        try {
-          await router.push("/mypage")
-          console.log("[DEBUG] マイページへの遷移が完了しました")
-        } catch (error) {
-          console.error("[DEBUG] マイページへの遷移中にエラーが発生:", error)
-        }
+        router.push("/mypage")
         router.refresh()
-      } else {
-        console.error("[DEBUG] ログインエラー:", data.message)
-        setLoginError(data.message || "メールアドレスまたはパスワードが正しくありません")
       }
     } catch (error) {
-      console.error("[DEBUG] ログイン例外:", error)
+      console.error("[DEBUG] Login error:", error)
       setLoginError("ログイン処理中にエラーが発生しました")
     } finally {
       setIsLoading(false)
@@ -67,10 +60,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={(e) => {
-      console.log("[DEBUG] フォーム送信イベント発火")
-      handleLogin(e)
-    }}>
+    <form onSubmit={handleLogin}>
       {loginError && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />

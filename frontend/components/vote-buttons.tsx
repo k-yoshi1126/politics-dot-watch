@@ -5,15 +5,17 @@ import { Button } from "@/components/ui/button"
 import { ThumbsUp, ThumbsDown, Minus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 interface VoteButtonsProps {
   billId: string
   compact?: boolean
-  initialVote?: string | null
-  currentUser?: any | null
+  initialVote?: "agree" | "disagree" | null
 }
 
-export function VoteButtons({ billId, compact = false, initialVote = null, currentUser }: VoteButtonsProps) {
+export function VoteButtons({ billId, compact = false, initialVote = null }: VoteButtonsProps) {
+  const { data: session } = useSession()
+  const currentUser = session?.user
   const [vote, setVote] = useState<"agree" | "disagree" | "abstain" | null>(
     initialVote as "agree" | "disagree" | "abstain" | null,
   )
@@ -101,6 +103,21 @@ export function VoteButtons({ billId, compact = false, initialVote = null, curre
         variant: "destructive",
       })
     }
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="flex gap-2">
+        <Button variant="outline" size={compact ? "sm" : "default"} disabled>
+          <ThumbsUp className="h-4 w-4 mr-2" />
+          賛成
+        </Button>
+        <Button variant="outline" size={compact ? "sm" : "default"} disabled>
+          <ThumbsDown className="h-4 w-4 mr-2" />
+          反対
+        </Button>
+      </div>
+    )
   }
 
   if (compact) {

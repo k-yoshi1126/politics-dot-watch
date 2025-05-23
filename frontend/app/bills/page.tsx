@@ -305,7 +305,7 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
         <div className="space-y-4 mb-8">
           {bills.map((bill) => {
             // ユーザーの投票情報から、この法案への投票を取得
-            const billVote = userVotes.find((v) => v.billId === bill.id)?.vote || null
+            const billVote = (userVotes.find((v) => v.billId === bill.id)?.vote || null) as "agree" | "disagree" | null
 
             return (
               <div key={bill.id} className="bill-card">
@@ -350,7 +350,7 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
                           <span>{bill.submittedDate}</span>
                         </div>
                       </div>
-                      <VoteButtons billId={bill.id} compact initialVote={billVote} currentUser={currentUser} />
+                      <VoteButtons billId={bill.id} compact initialVote={billVote} />
                     </div>
                   </div>
                 </div>

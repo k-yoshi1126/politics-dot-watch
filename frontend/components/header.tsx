@@ -3,20 +3,44 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { Menu, User } from "lucide-react"
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
   SheetClose
 } from "@/components/ui/sheet"
+import { useEffect, useState } from "react"
+import { useSession, signOut } from "next-auth/react"
 
 export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
+  const { data: session, status } = useSession()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userName, setUserName] = useState("")
+
+  useEffect(() => {
+    console.log("[Header DEBUG] Session status:", status);
+    console.log("[Header DEBUG] Session data:", session);
+    
+    if (status === "authenticated" && session?.user) {
+      setIsLoggedIn(true)
+      setUserName(session.user.name || "")
+      console.log("[Header DEBUG] User authenticated:", session.user.name);
+    } else {
+      setIsLoggedIn(false)
+      setUserName("")
+      console.log("[Header DEBUG] User not authenticated");
+    }
+  }, [status, session])
 
   const handleLogout = async () => {
-    document.cookie = "currentUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    console.log("[Header DEBUG] Logging out...");
+    await signOut({ redirect: false })
+    setIsLoggedIn(false)
+    setUserName("")
+    console.log("[Header DEBUG] Signed out, redirecting to /login");
     router.push("/login")
   }
 
@@ -55,23 +79,41 @@ export default function Header() {
               </Link>
             </nav>
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">
-                  ログイン
-                </Link>
-              </Button>
-              <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
-                <Link href="/login?tab=register">
-                  新規登録
-                </Link>
-              </Button>
+              {isLoggedIn ? (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/mypage" className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      マイページ
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    ログアウト
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/login">
+                      ログイン
+                    </Link>
+                  </Button>
+                  <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
+                    <Link href="/login?tab=register">
+                      新規登録
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2 md:hidden">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">
-                  ログイン
-                </Link>
-              </Button>
+              {!isLoggedIn && (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">
+                    ログイン
+                  </Link>
+                </Button>
+              )}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
@@ -84,6 +126,20 @@ export default function Header() {
                 </SheetTrigger>
                 <SheetContent side="right">
                   <div className="flex flex-col gap-4">
+                    {isLoggedIn ? (
+                      <SheetClose asChild>
+                        <Link href="/mypage" className="flex items-center gap-1 text-sm text-gray-600 no-underline">
+                          <User className="h-4 w-4" />
+                          マイページ
+                        </Link>
+                      </SheetClose>
+                    ) : (
+                      <SheetClose asChild>
+                         <Link href="/login?tab=register" className="text-sm text-gray-600 no-underline">
+                           新規登録
+                         </Link>
+                      </SheetClose>
+                    )}
                     <SheetClose asChild>
                       <Link
                         href="/"
@@ -108,6 +164,13 @@ export default function Header() {
                         よくある質問
                       </Link>
                     </SheetClose>
+                    {isLoggedIn && (
+                      <SheetClose asChild>
+                        <Button variant="ghost" className="justify-start px-0 text-sm text-gray-600" onClick={handleLogout}>
+                          ログアウト
+                        </Button>
+                      </SheetClose>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>

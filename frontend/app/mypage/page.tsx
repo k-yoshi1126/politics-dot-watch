@@ -3,8 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ThumbsUp, ThumbsDown, Minus, User, Settings, Clock, ArrowLeft } from "lucide-react"
-import { cookies } from "next/headers"
-import { getUserVotes } from "@/lib/auth"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/pages/api/auth/[...nextauth]"
 import { redirect } from "next/navigation"
 
 // 法案データ（実際のアプリではAPIから取得）
@@ -47,22 +47,22 @@ const billsData = [
   },
 ]
 
-export default function MyPage() {
-  const cookieStore = cookies()
-  const userCookie = cookieStore.get("currentUser")
+export default async function MyPage() {
   console.log("[DEBUG] マイページへ来ました。")
-  console.log("[DEBUG] Cookieの状態:", {
-    userCookie: userCookie ? "存在します" : "存在しません",
-    cookieValue: userCookie?.value
+
+  const session = await getServerSession(authOptions)
+  console.log("[DEBUG] セッション状態:", {
+    hasSession: !!session,
+    userId: session?.user?.id,
   })
 
   // ユーザーがログインしていない場合はログインページにリダイレクト
-  if (!userCookie) {
+  if (!session?.user) {
     console.log("[DEBUG] ユーザーがログインしていないため、ログインページにリダイレクトします")
     redirect("/login")
   }
 
-  const currentUser = JSON.parse(userCookie.value)
+  const currentUser = session.user
 
   // // ユーザーの投票履歴を取得
   // const userVotes = getUserVotes(currentUser.id)
@@ -96,7 +96,7 @@ export default function MyPage() {
   }
 
   return (
-    <div className="newspicks-container py-4 md:py-6">
+    <div className="actpicks-container py-4 md:py-6">
       <div className="max-w-3xl mx-auto">
         <Link href="/" className="text-sm text-primary hover:underline mb-4 inline-flex items-center">
           <ArrowLeft className="h-4 w-4 mr-1" />
@@ -214,7 +214,15 @@ export default function MyPage() {
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-sm font-medium text-gray-500">登録日</h3>
-                    <p className="font-medium">{currentUser.createdAt}</p>
+                    <p className="font-medium">
+                      {currentUser.createdAt
+                        ? new Date(currentUser.createdAt).toLocaleDateString("ja-JP", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "不明"}
+                    </p>
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-sm font-medium text-gray-500">投票数</h3>

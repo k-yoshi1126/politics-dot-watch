@@ -7,12 +7,12 @@ import { LoginForm } from "@/components/login-form"
 import { RegisterForm } from "@/components/register-form"
 import { useRouter } from "next/navigation"
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
 
   const handleTabChange = (value: string) => {
-    if (value === "register") {
-      router.push("/register")
+    if (value === "login") {
+      router.push("/login")
     }
   }
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
           ホームに戻る
         </Link>
 
-        <Tabs defaultValue="login" onValueChange={handleTabChange} className="w-full">
+        <Tabs defaultValue="register" onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
             <TabsTrigger value="login" className="data-[state=active]:bg-white">
               ログイン
