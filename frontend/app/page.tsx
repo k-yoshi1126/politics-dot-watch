@@ -102,7 +102,7 @@ export default async function Home(): Promise<React.JSX.Element> {
   const featuredBillVote = userVotes.find((v) => v.billId === featuredBill.id)?.vote || null
 
   return (
-    <div className="actpicks-container py-4 md:py-6">
+    <div className="politics-dot-watch-container py-4 md:py-6">
       <div>
         <CategoryTabs />
       </div>

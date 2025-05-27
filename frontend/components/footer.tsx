@@ -2,8 +2,8 @@ import Link from "next/link"
 
 export default function Footer() {
   return (
-    <footer className="actpicks-footer py-8">
-      <div className="actpicks-container">
+    <footer className="politics-dot-watch-footer py-8">
+      <div className="politics-dot-watch-container">
         <div className="flex flex-col md:flex-row justify-between gap-8">
           <div className="md:max-w-xs">
             <h3 className="text-base font-bold mb-4 flex items-center">

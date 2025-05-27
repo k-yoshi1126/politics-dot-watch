@@ -72,7 +72,7 @@
     @apply px-4 md:px-6 lg:px-8;
   }
 
-  .actpicks-container {
+  .politics-dot-watch-container {
     @apply w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
@@ -105,11 +105,11 @@
     @apply text-primary border-b-2 border-primary;
   }
 
-  .actpicks-header {
+  .politics-dot-watch-header {
     @apply sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm;
   }
 
-  .actpicks-footer {
+  .politics-dot-watch-footer {
     @apply bg-gray-50 border-t border-gray-200;
   }
 

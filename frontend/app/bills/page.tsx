@@ -235,7 +235,7 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
   const searchTerm = q || category ? (q ? `"${q}"` : `カテゴリ: ${categoryDisplayName}`) : ""
 
   return (
-    <div className="actpicks-container py-4 md:py-6">
+    <div className="politics-dot-watch-container py-4 md:py-6">
       <CategoryTabs />
 
       {/* モバイル用カテゴリータブ */}

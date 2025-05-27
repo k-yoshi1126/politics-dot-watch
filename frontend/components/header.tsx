@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
-import { Menu, User } from "lucide-react"
+import { Menu, User, Home, Search, MessageCircleQuestion, LogOut, UserPlus } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -49,8 +49,8 @@ export default function Header() {
   }
 
   return (
-    <header className="actpicks-header">
-      <div className="actpicks-container">
+    <header className="politics-dot-watch-header">
+      <div className="politics-dot-watch-container">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
             <Link href="/" className="text-lg font-bold no-underline flex items-center">
@@ -82,8 +82,7 @@ export default function Header() {
               {isLoggedIn ? (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/mypage" className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
+                    <Link href="/mypage">
                       マイページ
                     </Link>
                   </Button>
@@ -99,7 +98,7 @@ export default function Header() {
                     </Link>
                   </Button>
                   <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
-                    <Link href="/login?tab=register">
+                    <Link href="/register">
                       新規登録
                     </Link>
                   </Button>
@@ -128,14 +127,15 @@ export default function Header() {
                   <div className="flex flex-col gap-4">
                     {isLoggedIn ? (
                       <SheetClose asChild>
-                        <Link href="/mypage" className="flex items-center gap-1 text-sm text-gray-600 no-underline">
+                        <Link href="/mypage" className="flex items-center gap-2 text-sm text-gray-600 no-underline">
                           <User className="h-4 w-4" />
                           マイページ
                         </Link>
                       </SheetClose>
                     ) : (
                       <SheetClose asChild>
-                         <Link href="/login?tab=register" className="text-sm text-gray-600 no-underline">
+                         <Link href="/register" className="flex items-center gap-2 stext-sm text-gray-600 no-underline">
+                          <UserPlus className="h-4 w-4" />
                            新規登録
                          </Link>
                       </SheetClose>
@@ -143,30 +143,34 @@ export default function Header() {
                     <SheetClose asChild>
                       <Link
                         href="/"
-                        className={`text-sm ${isActive("/") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
+                        className={`flex items-center gap-2 text-sm ${isActive("/") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
                       >
+                        <Home className="h-4 w-4" />
                         ホーム
                       </Link>
                     </SheetClose>
                     <SheetClose asChild>
                       <Link
                         href="/bills"
-                        className={`text-sm ${isActive("/bills") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
+                        className={`flex items-center gap-2 text-sm ${isActive("/bills") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
                       >
+                        <Search className="h-4 w-4" />
                         法案検索
                       </Link>
                     </SheetClose>
                     <SheetClose asChild>
                       <Link
                         href="/faq"
-                        className={`text-sm ${isActive("/faq") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
+                        className={`flex items-center gap-2 text-sm ${isActive("/faq") ? "text-primary font-medium" : "text-gray-600"} no-underline`}
                       >
+                        <MessageCircleQuestion className="h-4 w-4" />
                         よくある質問
                       </Link>
                     </SheetClose>
                     {isLoggedIn && (
                       <SheetClose asChild>
-                        <Button variant="ghost" className="justify-start px-0 text-sm text-gray-600" onClick={handleLogout}>
+                        <Button variant="ghost" className="flex items-center gap-2 justify-start px-0 text-sm text-gray-600" onClick={handleLogout}>
+                          <LogOut className="h-4 w-4" />
                           ログアウト
                         </Button>
                       </SheetClose>
@@ -197,7 +201,7 @@ export default function Header() {
 
 //   return (
 //     <div className="hidden md:block border-t border-gray-200">
-//       <div className="actpicks-container">
+//       <div className="politics-dot-watch-container">
 //         <div className="flex overflow-x-auto py-1 gap-4">
 //           <Link
 //             href="/bills?category=all"

@@ -81,7 +81,7 @@ export default function BillPage({ params }: BillPageProps) {
   }
 
   return (
-    <div className="actpicks-container py-4 md:py-6">
+    <div className="politics-dot-watch-container py-4 md:py-6">
       <div className="max-w-3xl mx-auto">
         <Link href="/bills" className="text-sm text-primary hover:underline mb-4 inline-flex items-center">
           <ArrowLeft className="h-4 w-4 mr-1" />
