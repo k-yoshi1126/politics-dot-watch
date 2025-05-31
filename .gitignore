@@ -57,3 +57,10 @@ next-env.d.ts
 
 # Vercel
 .vercel 
+
+# venv
+venv/
+
+# python cache
+*.pyc
+__pycache__/
