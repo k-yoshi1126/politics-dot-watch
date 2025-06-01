@@ -71,7 +71,8 @@ class DietScraper(BaseScraper):
         print(f"議案一覧ページからデータ取得中...")
         url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/kaiji{session}.htm"
         soup = self.get_page_content(url)
-        bill_table = BillListParser.extract_bill_table(soup)
+        parser = BillListParser(soup.encode())
+        bill_table = parser.parse()
         # データ登録
         DietSessionDao.save_bills(bill_table, session)
 
@@ -81,12 +82,19 @@ class DietScraper(BaseScraper):
         return progress_page_paths, content_page_paths
 
     def test(self, session: str):
-        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/keika/1DD75C6.htm"
+        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/g21505001.htm"
         soup = self.get_page_content(url)
-        print(soup)
-        parser = BillProgressParser(str(soup))
-        bill_progress_table = parser.parse()
-        print(bill_progress_table)
+        # print(soup)
+        # parser = BillProgressParser(str(soup))
+        # bill_progress_table = parser.parse()
+        # print(bill_progress_table)
+        # HTMLの内容を出力
+        try:
+            with open("result.html", "w", encoding="utf-8") as f:
+                f.write(str(soup.prettify()))
+            print("✅ HTMLの出力に成功しました")
+        except Exception as e:
+            print(f"❌ HTMLの出力に失敗: {e}")
 
     def scrape_progress_info(self, progress_page_paths: List[str], session: str):
         """議案審議経過情報をスクレイピング"""
@@ -102,7 +110,7 @@ class DietScraper(BaseScraper):
             print(url)
             time.sleep(2)  # 2秒間の間隔を設ける
             soup = self.get_page_content(url)
-            parser = BillProgressParser(str(soup))
+            parser = BillProgressParser(soup.encode())
             bill_progress_table = parser.parse()
             BillProgressDao.save(bill_progress_table, session)
 

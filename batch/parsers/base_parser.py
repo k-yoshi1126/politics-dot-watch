@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
-from datetime import datetime, date
-from typing import Dict, Optional, Union
+from datetime import date
+from typing import Dict, Optional
 import logging
 import re
 from japanera import EraDate, Era
@@ -12,21 +12,16 @@ logger = logging.getLogger(__name__)
 class BaseParser:
     """パーサーの基底クラス"""
 
-    def __init__(self, html_content: Union[str, bytes]):
-        # strで渡された場合はencodeしてbytesに、bytesならそのまま
-        if isinstance(html_content, str):
-            html_bytes = html_content.encode()
-        else:
-            html_bytes = html_content
-        # 文字コードを自動検出
-        detected = chardet.detect(html_bytes)
-        encoding = detected["encoding"]
-        logger.info(f"検出された文字コード: {encoding}")
-        # ここでdecodeしてstr化する（strならfrom_encodingは不要）
-        html_text = html_bytes.decode(encoding, errors="replace")
+    def __init__(self, html_content: bytes):
+        # 文字コードを検出
+        result = chardet.detect(html_content)
+        encoding = result["encoding"]
 
-        # BeautifulSoupに渡すときはfrom_encodingを削除
-        self.soup = BeautifulSoup(html_text, "lxml")
+        # 文字コードを指定してデコード
+        html_str = html_content.decode(encoding)
+
+        # BeautifulSoupオブジェクトを生成
+        self.soup = BeautifulSoup(html_str, "html.parser")
 
     def _convert_era_to_constant(self, era_str: str) -> Optional[str]:
         """元号文字列を返す（japaneraライブラリでは元号文字列を直接使用）"""
