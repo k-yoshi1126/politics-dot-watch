@@ -49,30 +49,30 @@ model BillProgress {
   billTitle                String    @db.Text         // 議案件名
   submitter                String?   @db.Text         // 議案提出者
   submitterParty           String?   @db.Text         // 議案提出会派
-  houseInitialReviewDate   DateTime?                  // 衆議院予備審査議案受理年月日
+  houseInitialReviewDate   DateTime? @db.Date         // 衆議院予備審査議案受理年月日
+  houseInitialCommitteeDate DateTime? @db.Date        // 衆議院予備付託年月日
   houseInitialCommittee    String?   @db.Text         // 衆議院予備付託委員会
-  houseInitialCommitteeDate DateTime?                 // 衆議院予備付託年月日
-  houseReviewDate         DateTime?                   // 衆議院議案受理年月日
+  houseReviewDate         DateTime?  @db.Date         // 衆議院議案受理年月日
+  houseCommitteeDate      DateTime?  @db.Date         // 衆議院付託年月日
   houseCommittee          String?   @db.Text          // 衆議院付託委員会
-  houseCommitteeDate      DateTime?                   // 衆議院付託年月日
+  houseCommitteeEndDate   DateTime?  @db.Date         // 衆議院審査終了年月日
   houseCommitteeResult    String?   @db.Text          // 衆議院審査結果
-  houseCommitteeEndDate   DateTime?                   // 衆議院審査終了年月日
+  houseEndDate            DateTime?  @db.Date         // 衆議院審議終了年月日
   houseResult             String?   @db.Text          // 衆議院審議結果
-  houseEndDate            DateTime?                   // 衆議院審議終了年月日
   housePartyAttitude      String?   @db.Text          // 衆議院審議時会派態度
   houseSupportingParties  String?   @db.Text          // 衆議院審議時賛成会派
   houseOpposingParties    String?   @db.Text          // 衆議院審議時反対会派
-  councilInitialReviewDate DateTime?                  // 参議院予備審査議案受理年月日
+  councilInitialReviewDate DateTime? @db.Date         // 参議院予備審査議案受理年月日
+  councilInitialCommitteeDate DateTime? @db.Date      // 参議院予備付託年月日
   councilInitialCommittee String?   @db.Text          // 参議院予備付託委員会
-  councilInitialCommitteeDate DateTime?               // 参議院予備付託年月日
-  councilReviewDate       DateTime?                   // 参議院議案受理年月日
+  councilReviewDate       DateTime?  @db.Date         // 参議院議案受理年月日
+  councilCommitteeDate    DateTime?  @db.Date         // 参議院付託年月日
   councilCommittee        String?   @db.Text          // 参議院付託委員会
-  councilCommitteeDate    DateTime?                   // 参議院付託年月日
+  councilCommitteeEndDate DateTime?  @db.Date         // 参議院審査終了年月日
   councilCommitteeResult  String?   @db.Text          // 参議院審査結果
-  councilCommitteeEndDate DateTime?                   // 参議院審査終了年月日
+  councilEndDate          DateTime?  @db.Date         // 参議院審議終了年月日
   councilResult           String?   @db.Text          // 参議院審議結果
-  councilEndDate          DateTime?                   // 参議院審議終了年月日
-  enactmentDate           DateTime?                   // 公布年月日
+  enactmentDate           DateTime?  @db.Date         // 公布年月日
   lawNumber               String?   @db.VarChar(50)   // 法律番号
   submitters              String?   @db.Text          // 議案提出者一覧
   supporters              String?   @db.Text          // 議案提出の賛成者
@@ -83,6 +83,9 @@ model BillProgress {
   dietSessionInfo         DietSessionInfo @relation(fields: [session, submitSession, number], references: [session, submitSession, number])
 
   @@id([session, submitSession, number])
+  @@index([session])
+  @@index([submitSession])
+  @@index([number])
 }
 
 // 投稿モデル

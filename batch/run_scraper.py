@@ -15,7 +15,8 @@ def quick_run():
     displayer = BillDisplayer()
     
     try:
-        bills = scraper.scrape_bill_info(sys.argv[1], 1)
+        # scraper.test(sys.argv[1])
+        scraper.scrape_bill_info(sys.argv[1])
             
     except Exception as e:
         print(f"❌ エラーが発生しました: {e}")

@@ -75,6 +75,63 @@ CREATE TABLE "File" (
     CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "DietSessionInfo" (
+    "session" INTEGER NOT NULL,
+    "submitSession" INTEGER NOT NULL,
+    "number" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "progressUrl" TEXT NOT NULL,
+    "contentUrl" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DietSessionInfo_pkey" PRIMARY KEY ("session","submitSession","number")
+);
+
+-- CreateTable
+CREATE TABLE "BillProgress" (
+    "session" INTEGER NOT NULL,
+    "submitSession" INTEGER NOT NULL,
+    "number" INTEGER NOT NULL,
+    "billType" VARCHAR(50),
+    "billTitle" TEXT NOT NULL,
+    "submitter" TEXT,
+    "submitterParty" TEXT,
+    "houseInitialReviewDate" DATE,
+    "houseInitialCommittee" TEXT,
+    "houseInitialCommitteeDate" DATE,
+    "houseReviewDate" DATE,
+    "houseCommittee" TEXT,
+    "houseCommitteeDate" DATE,
+    "houseCommitteeResult" TEXT,
+    "houseCommitteeEndDate" DATE,
+    "houseResult" TEXT,
+    "houseEndDate" DATE,
+    "housePartyAttitude" TEXT,
+    "houseSupportingParties" TEXT,
+    "houseOpposingParties" TEXT,
+    "councilInitialReviewDate" DATE,
+    "councilInitialCommittee" TEXT,
+    "councilInitialCommitteeDate" DATE,
+    "councilReviewDate" DATE,
+    "councilCommittee" TEXT,
+    "councilCommitteeDate" DATE,
+    "councilCommitteeResult" TEXT,
+    "councilCommitteeEndDate" DATE,
+    "councilResult" TEXT,
+    "councilEndDate" DATE,
+    "enactmentDate" DATE,
+    "lawNumber" VARCHAR(50),
+    "submitters" TEXT,
+    "supporters" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BillProgress_pkey" PRIMARY KEY ("session","submitSession","number")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -90,6 +147,15 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
 
+-- CreateIndex
+CREATE INDEX "BillProgress_session_idx" ON "BillProgress"("session");
+
+-- CreateIndex
+CREATE INDEX "BillProgress_submitSession_idx" ON "BillProgress"("submitSession");
+
+-- CreateIndex
+CREATE INDEX "BillProgress_number_idx" ON "BillProgress"("number");
+
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -98,3 +164,6 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BillProgress" ADD CONSTRAINT "BillProgress_session_submitSession_number_fkey" FOREIGN KEY ("session", "submitSession", "number") REFERENCES "DietSessionInfo"("session", "submitSession", "number") ON DELETE RESTRICT ON UPDATE CASCADE; 
