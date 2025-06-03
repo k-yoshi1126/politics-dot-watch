@@ -15,8 +15,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from common import BaseScraper
-from db.dao import DietSessionDao, BillProgressDao
-from parsers.house_of_representative import BillListParser, BillProgressParser
+from db.dao import DietSessionDao, BillProgressDao, BillContentInfoUrlDao
+from parsers.house_of_representative import (
+    BillListParser,
+    BillProgressParser,
+    BillContentInfoListParser,
+)
 
 
 class DietScraper(BaseScraper):
@@ -54,10 +58,13 @@ class DietScraper(BaseScraper):
         """スクレイピング"""
         try:
             print(f"📄 第{session}回国会の議案情報をスクレイピング")
-            progress_page_paths, content_page_paths = self.scrape_bill_list(session)
+            bill_list = self.scrape_bill_list(session)
 
             print(f"議案審議経過情報ページからデータ取得中...")
-            self.scrape_progress_info(progress_page_paths, session)
+            self.scrape_progress_info(bill_list, session)
+
+            print(f"議案本文情報一覧ページからデータ取得中...")
+            self.scrape_content_info_list(bill_list)
 
             print(f"法案ページからデータ取得中...")
 
@@ -65,54 +72,59 @@ class DietScraper(BaseScraper):
         except Exception as e:
             print(f"❌ スクレイピングに失敗: {e}")
 
-    def scrape_bill_list(self, session: str) -> Tuple[List[str], List[str]]:
+    def scrape_bill_list(self, session: str) -> List[List[str]]:
         """議案一覧をスクレイピング"""
 
         print(f"議案一覧ページからデータ取得中...")
         url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/kaiji{session}.htm"
         soup = self.get_page_content(url)
         parser = BillListParser(soup.encode())
-        bill_table = parser.parse()
-        # データ登録
-        DietSessionDao.save_bills(bill_table, session)
+        bill_list = parser.parse()
+        DietSessionDao.save_bills(bill_list, session)
 
-        progress_page_paths = [row[4] for row in bill_table]
-        content_page_paths = [row[5] for row in bill_table]
-
-        return progress_page_paths, content_page_paths
+        return bill_list
 
     def test(self, session: str):
         url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/g21505001.htm"
         soup = self.get_page_content(url)
-        # print(soup)
-        # parser = BillProgressParser(str(soup))
-        # bill_progress_table = parser.parse()
-        # print(bill_progress_table)
+        parser = BillContentInfoListParser(soup.encode())
+        bill_content_info_list = parser.parse()
+        print(bill_content_info_list)
         # HTMLの内容を出力
-        try:
-            with open("result.html", "w", encoding="utf-8") as f:
-                f.write(str(soup.prettify()))
-            print("✅ HTMLの出力に成功しました")
-        except Exception as e:
-            print(f"❌ HTMLの出力に失敗: {e}")
+        # try:
+        #     with open("result.html", "w", encoding="utf-8") as f:
+        #         f.write(str(soup.prettify()))
+        #     print("✅ HTMLの出力に成功しました")
+        # except Exception as e:
+        #     print(f"❌ HTMLの出力に失敗: {e}")
 
-    def scrape_progress_info(self, progress_page_paths: List[str], session: str):
+    def scrape_progress_info(self, bill_list: List[List[str]], session: str):
         """議案審議経過情報をスクレイピング"""
 
         # URL
         base_url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/"
 
-        # 各URLに対して処理
-        for temp_path in progress_page_paths:
-            path = temp_path[2:]
-            # 完全なURLを作成
-            url = base_url + path
-            print(url)
+        for row in bill_list:
+            url = base_url + row[4][2:]
             time.sleep(2)  # 2秒間の間隔を設ける
+            print(url)
             soup = self.get_page_content(url)
             parser = BillProgressParser(soup.encode())
             bill_progress_table = parser.parse()
             BillProgressDao.save(bill_progress_table, session)
+
+    def scrape_content_info_list(self, bill_list: List[List[str]]):
+        """議案本文情報一覧をスクレイピング"""
+        base_url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/"
+
+        for row in bill_list:
+            url = base_url + row[5][2:]
+            time.sleep(2)
+            print(url)
+            soup = self.get_page_content(url)
+            parser = BillContentInfoListParser(soup.encode())
+            bill_content_info_list = parser.parse()
+            BillContentInfoUrlDao.save(bill_content_info_list, int(row[0]), int(row[1]))
 
     def _scrape_bill_detail_requests(self, url: str, session) -> Optional[Dict]:
         """requestsを使用した議案詳細の取得"""

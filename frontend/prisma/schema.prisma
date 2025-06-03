@@ -88,6 +88,19 @@ model BillProgress {
   @@index([number])
 }
 
+// 議案本文情報リンクモデル
+model BillContentInfoUrl {
+  id            Int      @id @default(autoincrement())
+  submitSession Int      // 提出国会回次
+  number        Int      // 番号
+  text          String   @db.Text  // テキスト
+  url           String   @db.Text  // URL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([submitSession, number, text])
+}
+
 // 投稿モデル
 model Post {
   id        String   @id @default(cuid())

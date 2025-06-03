@@ -132,6 +132,19 @@ CREATE TABLE "File" (
     CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "BillContentInfoUrl" (
+    "id" SERIAL NOT NULL,
+    "submitSession" INTEGER NOT NULL,
+    "number" INTEGER NOT NULL,
+    "text" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BillContentInfoUrl_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -155,6 +168,9 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BillContentInfoUrl_submitSession_number_key" ON "BillContentInfoUrl"("submitSession", "number", "text");
 
 -- AddForeignKey
 ALTER TABLE "BillProgress" ADD CONSTRAINT "BillProgress_session_submitSession_number_fkey" FOREIGN KEY ("session", "submitSession", "number") REFERENCES "DietSessionInfo"("session", "submitSession", "number") ON DELETE RESTRICT ON UPDATE CASCADE;
