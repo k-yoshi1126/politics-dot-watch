@@ -35,7 +35,7 @@ class BillContentInfoListParser(BaseParser):
 
                     # リンクのテキストとURLを取得
                     text = link.get_text().strip()
-                    url = link.get("href", "")
+                    url = self._normalize_url_path(link.get("href", ""))
 
                     if text and url:
                         result.append({"テキスト": text, "URL": url})
