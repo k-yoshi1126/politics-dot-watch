@@ -1,5 +1,7 @@
 from typing import List
 import logging
+
+# from bs4 import BeautifulSoup
 from ..base_parser import BaseParser
 
 logger = logging.getLogger(__name__)
@@ -12,14 +14,14 @@ class BillListParser(BaseParser):
 
     def parse(self) -> List[List[str]]:
         """議案一覧表のデータを抽出"""
-        table_data = []
+        bill_list = []
 
         try:
             # 表を取得
             table = self.soup.find("table", class_="table")
             if not table:
                 logger.warning("議案一覧のテーブルが見つかりませんでした")
-                return table_data
+                return bill_list
 
             # データ行を取得
             for i, row in enumerate(
@@ -32,7 +34,9 @@ class BillListParser(BaseParser):
                             # リンクがある場合はリンクのURLを取得
                             link = td.find("a")
                             if link and "href" in link.attrs:
-                                row_data.append(link["href"])
+                                # URLパスを正規化
+                                normalized_url = self._normalize_url_path(link["href"])
+                                row_data.append(normalized_url)
                             else:
                                 # 通常のテキストを取得
                                 span = td.find("span", class_="txt03")
@@ -47,7 +51,7 @@ class BillListParser(BaseParser):
                             row_data.append("")
 
                     if row_data:  # 空でない場合のみ追加
-                        table_data.append(row_data)
+                        bill_list.append(row_data)
                 except Exception as e:
                     logger.error(
                         f"行の処理中にエラーが発生しました: 行={i}, エラー={str(e)}"
@@ -55,13 +59,13 @@ class BillListParser(BaseParser):
                     continue
 
             # テーブルデータを出力
-            self._format_table_output(table_data)
+            self._format_table_output(bill_list)
 
         except Exception as e:
             logger.error(f"パース中にエラーが発生しました: {str(e)}")
             raise
 
-        return table_data
+        return bill_list
 
     def _format_table_output(self, table_data: List[List[str]]) -> None:
         """テーブルデータを整形して出力"""

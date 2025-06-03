@@ -1,15 +1,16 @@
 from bs4 import BeautifulSoup
 from datetime import date
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Union
 import logging
 import re
 from japanera import EraDate, Era
 import chardet
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
 
-class BaseParser:
+class BaseParser(ABC):
     """パーサーの基底クラス"""
 
     def __init__(self, html_content: bytes):
@@ -95,3 +96,21 @@ class BaseParser:
         except (ValueError, TypeError) as e:
             logger.error(f"整数変換エラー: {str(e)} (入力値: {value})")
             return None
+
+    @abstractmethod
+    def parse(self) -> Union[Dict, List]:
+        """HTMLをパースしてデータを抽出"""
+        pass
+
+    def _normalize_url_path(self, url_path: str) -> str:
+        """URLパスを正規化する
+
+        Args:
+            url_path (str): 正規化するURLパス（例: './keika/1DDCEA6.htm'）
+
+        Returns:
+            str: 正規化されたURLパス（例: '/keika/1DDCEA6.htm'）
+        """
+        # './' を '/' に置換
+        normalized_path = url_path.replace("./", "/")
+        return normalized_path

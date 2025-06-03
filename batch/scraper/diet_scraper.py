@@ -26,6 +26,12 @@ from parsers.house_of_representative import (
 class DietScraper(BaseScraper):
     """衆議院議案情報スクレイピングクラス"""
 
+    # ベースURL
+    BASE_URL = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian"
+    BILL_LIST_URL = f"{BASE_URL}/kaiji{{}}.htm"  # 議案一覧
+    BILL_DETAIL_URL = f"{BASE_URL}/{{}}"  # 議案詳細
+    BILL_CONTENT_URL = f"{BASE_URL}/honbun/{{}}"  # 議案本文
+
     def __init__(self, headless: bool = True, wait_time: int = 2):
         self.headless = headless
         self.driver = None
@@ -74,9 +80,8 @@ class DietScraper(BaseScraper):
 
     def scrape_bill_list(self, session: str) -> List[List[str]]:
         """議案一覧をスクレイピング"""
-
         print(f"議案一覧ページからデータ取得中...")
-        url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/kaiji{session}.htm"
+        url = self.BILL_LIST_URL.format(session)
         soup = self.get_page_content(url)
         parser = BillListParser(soup.encode())
         bill_list = parser.parse()
@@ -100,13 +105,9 @@ class DietScraper(BaseScraper):
 
     def scrape_progress_info(self, bill_list: List[List[str]], session: str):
         """議案審議経過情報をスクレイピング"""
-
-        # URL
-        base_url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/"
-
         for row in bill_list:
-            url = base_url + row[4][2:]
-            time.sleep(2)  # 2秒間の間隔を設ける
+            url = self.BILL_DETAIL_URL.format(row[4])
+            time.sleep(2)
             print(url)
             soup = self.get_page_content(url)
             parser = BillProgressParser(soup.encode())
@@ -115,148 +116,85 @@ class DietScraper(BaseScraper):
 
     def scrape_content_info_list(self, bill_list: List[List[str]]):
         """議案本文情報一覧をスクレイピング"""
-        base_url = f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/"
-
         for row in bill_list:
-            url = base_url + row[5][2:]
+            url = self.BILL_DETAIL_URL.format(row[5])
             time.sleep(2)
             print(url)
             soup = self.get_page_content(url)
             parser = BillContentInfoListParser(soup.encode())
             bill_content_info_list = parser.parse()
-            BillContentInfoUrlDao.save(bill_content_info_list, int(row[0]), int(row[1]))
-
-    def _scrape_bill_detail_requests(self, url: str, session) -> Optional[Dict]:
-        """requestsを使用した議案詳細の取得"""
-        try:
-            response = self.session.get(url, timeout=30)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.content, "html.parser")
-            return self._extract_bill_data(soup, url, session)
-
-        except Exception as e:
-            print(f"   ❌ requests詳細取得エラー: {e}")
-            return None
-
-    def _extract_bill_data(
-        self, soup: BeautifulSoup, url: str, session
-    ) -> Optional[Dict]:
-        """HTMLから議案データを抽出"""
-        try:
-            print("HTMLから議案データを抽出")
-            # 議案番号を取得
-            # bill_number = self._extract_bill_number(soup)
-            # print(f"bill_number:  {bill_number}")
-
-            # タイトルを取得
-            bill_table = self._extract_bill_table(soup, session)
-            # print(f"テーブル情報:  {bill_table}")
-
-            return {"table_data": bill_table, "source_url": url}
-
-        except Exception as e:
-            print(f"   ❌ データ抽出エラー: {e}")
-            return None
-
-    def _extract_title(self, soup: BeautifulSoup) -> List[str]:
-        """タイトルを抽出"""
-        titles = []
-        # 表の3列目から議案件名を取得
-        table = soup.find("table", class_="table")
-        if table:
-            rows = table.find_all("tr")
-            if len(rows) > 1:  # ヘッダー行を除く
-                # データ行を全て取得
-                for row in rows[1:]:  # ヘッダー行をスキップ
-                    columns = row.find_all("td")
-                    if len(columns) >= 3:
-                        title_span = columns[2].find("span", class_="txt03")
-                        if title_span:
-                            title = title_span.get_text().strip()
-                            if title:  # 空でない場合のみ追加
-                                titles.append(title)
-        return titles if titles else ["タイトル不明"]
-
-    def _extract_table_data(self, soup: BeautifulSoup) -> Dict[str, str]:
-        """テーブルデータを抽出"""
-        data = {}
-
-        for table in soup.find_all("table"):
-            for row in table.find_all("tr"):
-                cells = row.find_all(["td", "th"])
-                if len(cells) >= 2:
-                    key = cells[0].get_text().strip()
-                    value = cells[1].get_text().strip()
-                    if key and value:
-                        data[key] = value
-
-        return data
-
-    def _extract_bill_table(self, soup: BeautifulSoup, session) -> List[List[str]]:
-        """議案一覧表の全データを2次元配列で取得"""
-        table_data = []
-
-        # 表を取得
-        table = soup.find("table", class_="table")
-        if not table:
-            return table_data
-
-        # ヘッダー行を取得
-        headers = []
-        header_row = table.find("tr")
-        if header_row:
-            for th in header_row.find_all("th"):
-                header_text = th.find("span", class_="txt03")
-                if header_text:
-                    headers.append(header_text.get_text().strip())
-
-        # データ行を取得
-        for row in table.find_all("tr")[1:]:  # ヘッダー行をスキップ
-            row_data = []
-            for td in row.find_all("td"):
-                # リンクがある場合はリンクのURLを取得
-                link = td.find("a")
-                if link and "href" in link.attrs:
-                    row_data.append(link["href"])
-                else:
-                    # 通常のテキストを取得
-                    span = td.find("span", class_="txt03")
-                    if span:
-                        row_data.append(span.get_text().strip())
-                    else:
-                        row_data.append("")
-
-            if row_data:  # 空でない場合のみ追加
-                table_data.append(row_data)
-
-        # 整形して出力
-        if table_data:
-            print("\n📋 議案一覧:")
-            print("=" * 120)
-            print(
-                f"{'提出回次':<8} {'番号':<6} {'議案件名':<50} {'審議状況':<12} {'経過情報':<20} {'本文情報':<20}"
+            # 新規データがある場合のみ処理を実行
+            saved_items = BillContentInfoUrlDao.save(
+                bill_content_info_list, int(row[0]), int(row[1])
             )
-            print("-" * 120)
-            for row in table_data:
-                # 議案件名が長い場合は省略
-                title = row[2]
-                if len(title) > 45:
-                    title = title[:42] + "..."
-                print(
-                    f"{row[0]:<8} {row[1]:<6} {title:<50} {row[3]:<12} {row[4]:<20} {row[5]:<20}"
-                )
-            print("=" * 120)
-            print(f"合計: {len(table_data)}件\n")
+            if saved_items:
+                # self._process_saved_items(saved_items, int(row[0]), int(row[1]))
+                print("データ登録あり")
 
-        return table_data
+    # def _process_saved_items(
+    #     self, saved_items: List[Dict[str, str]], submit_session: int, number: int
+    # ):
+    #     """保存されたデータに対して処理を行う
 
-    def _find_in_table_data(
-        self, data: Dict[str, str], keys: List[str]
-    ) -> Optional[str]:
-        """テーブルデータから該当する項目を検索"""
-        for key in keys:
-            for data_key in data.keys():
-                if key in data_key:
-                    return data[data_key]
-        return None
+    #     Args:
+    #         saved_items (List[Dict[str, str]]): 保存されたデータのリスト
+    #         submit_session (int): 提出国会回次
+    #         number (int): 番号
+    #     """
+
+    #     for item in saved_items:
+    #         if item["テキスト"] == "提出時法律案":
+    #             self._process_submit_content(item, submit_session, number)
+    #         elif item["テキスト"] == "[要綱]":
+    #             self._process_outline(item, submit_session, number)
+    #         elif item["テキスト"] == "修正案":
+    #             self._process_amendment(item, submit_session, number)
+
+    # def _process_submit_content(
+    #     self, item: Dict[str, str], submit_session: int, number: int
+    # ):
+    #     """提出時法律案の処理"""
+    #     submit_url = self.BILL_CONTENT_URL.format(item["URL"][2:])
+    #     soup = self.get_page_content(submit_url)
+    #     # 提出時法律案のパース処理
+    #     submit_content_parser = SubmitContentParser(soup.encode())
+    #     submit_content = submit_content_parser.parse(item["URL"])
+    #     BillSubmitContentDao.save(submit_content, submit_session, number)
+
+    # def _process_outline(self, item: Dict[str, str], submit_session: int, number: int):
+    #     """要綱の処理
+
+    #     Args:
+    #         item (Dict[str, str]): 保存されたデータ
+    #         submit_session (int): 提出国会回次
+    #         number (int): 番号
+    #     """
+    #     outline_url = (
+    #         f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/"
+    #         + item["URL"][2:]
+    #     )
+    #     soup = self.get_page_content(outline_url)
+    #     # 要綱のパース処理
+    #     outline_parser = OutlineParser(soup.encode())
+    #     outline = outline_parser.parse(item["URL"])
+    #     BillOutlineDao.save(outline, submit_session, number)
+
+    # def _process_amendment(
+    #     self, item: Dict[str, str], submit_session: int, number: int
+    # ):
+    #     """修正案の処理
+
+    #     Args:
+    #         item (Dict[str, str]): 保存されたデータ
+    #         submit_session (int): 提出国会回次
+    #         number (int): 番号
+    #     """
+    #     amendment_url = (
+    #         f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/"
+    #         + item["URL"][2:]
+    #     )
+    #     soup = self.get_page_content(amendment_url)
+    #     # 修正案のパース処理
+    #     amendment_parser = AmendmentParser(soup.encode())
+    #     amendment = amendment_parser.parse(item["URL"])
+    #     BillProposedAmendmentDao.save(amendment, submit_session, number)
