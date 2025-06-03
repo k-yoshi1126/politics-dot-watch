@@ -15,11 +15,21 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from common import BaseScraper
-from db.dao import DietSessionDao, BillProgressDao, BillContentInfoUrlDao
+from db.dao import (
+    DietSessionDao,
+    BillProgressDao,
+    BillContentInfoUrlDao,
+    BillSubmitContentDao,
+    BillOutlineDao,
+    BillProposedAmendmentDao,
+)
 from parsers.house_of_representative import (
     BillListParser,
     BillProgressParser,
     BillContentInfoListParser,
+    SubmitContentParser,
+    # OutlineParser,
+    # AmendmentParser,
 )
 
 
@@ -29,8 +39,8 @@ class DietScraper(BaseScraper):
     # ベースURL
     BASE_URL = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian"
     BILL_LIST_URL = f"{BASE_URL}/kaiji{{}}.htm"  # 議案一覧
-    BILL_DETAIL_URL = f"{BASE_URL}/{{}}"  # 議案詳細
-    BILL_CONTENT_URL = f"{BASE_URL}/honbun/{{}}"  # 議案本文
+    BILL_DETAIL_URL = f"{BASE_URL}{{}}"  # 議案詳細
+    BILL_CONTENT_URL = f"{BASE_URL}/honbun{{}}"  # 議案本文
 
     def __init__(self, headless: bool = True, wait_time: int = 2):
         self.headless = headless
@@ -90,18 +100,18 @@ class DietScraper(BaseScraper):
         return bill_list
 
     def test(self, session: str):
-        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/g21505001.htm"
+        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/houan/g21605003.htm"
         soup = self.get_page_content(url)
         parser = BillContentInfoListParser(soup.encode())
         bill_content_info_list = parser.parse()
         print(bill_content_info_list)
         # HTMLの内容を出力
-        # try:
-        #     with open("result.html", "w", encoding="utf-8") as f:
-        #         f.write(str(soup.prettify()))
-        #     print("✅ HTMLの出力に成功しました")
-        # except Exception as e:
-        #     print(f"❌ HTMLの出力に失敗: {e}")
+        try:
+            with open("result.html", "w", encoding="utf-8") as f:
+                f.write(str(soup.prettify()))
+            print("✅ HTMLの出力に成功しました")
+        except Exception as e:
+            print(f"❌ HTMLの出力に失敗: {e}")
 
     def scrape_progress_info(self, bill_list: List[List[str]], session: str):
         """議案審議経過情報をスクレイピング"""
@@ -109,7 +119,9 @@ class DietScraper(BaseScraper):
             url = self.BILL_DETAIL_URL.format(row[4])
             time.sleep(2)
             print(url)
+            # HTMLを取得・パース
             soup = self.get_page_content(url)
+            # パーサはバイト列を受け取る
             parser = BillProgressParser(soup.encode())
             bill_progress_table = parser.parse()
             BillProgressDao.save(bill_progress_table, session)
@@ -128,38 +140,39 @@ class DietScraper(BaseScraper):
                 bill_content_info_list, int(row[0]), int(row[1])
             )
             if saved_items:
-                # self._process_saved_items(saved_items, int(row[0]), int(row[1]))
+                self._process_saved_items(saved_items, int(row[0]), int(row[1]))
                 print("データ登録あり")
 
-    # def _process_saved_items(
-    #     self, saved_items: List[Dict[str, str]], submit_session: int, number: int
-    # ):
-    #     """保存されたデータに対して処理を行う
+    def _process_saved_items(
+        self, saved_items: List[Dict[str, str]], submit_session: int, number: int
+    ):
+        """保存されたデータに対して処理を行う
 
-    #     Args:
-    #         saved_items (List[Dict[str, str]]): 保存されたデータのリスト
-    #         submit_session (int): 提出国会回次
-    #         number (int): 番号
-    #     """
+        Args:
+            saved_items (List[Dict[str, str]]): 保存されたデータのリスト
+            submit_session (int): 提出国会回次
+            number (int): 番号
+        """
 
-    #     for item in saved_items:
-    #         if item["テキスト"] == "提出時法律案":
-    #             self._process_submit_content(item, submit_session, number)
-    #         elif item["テキスト"] == "[要綱]":
-    #             self._process_outline(item, submit_session, number)
-    #         elif item["テキスト"] == "修正案":
-    #             self._process_amendment(item, submit_session, number)
+        for item in saved_items:
+            if item["テキスト"] == "提出時法律案":
+                self._process_submit_content(item, submit_session, number)
+            # elif item["テキスト"] == "[要綱]":
+            #     self._process_outline(item, submit_session, number)
+            # elif item["テキスト"] == "修正案":
+            #     self._process_amendment(item, submit_session, number)
 
-    # def _process_submit_content(
-    #     self, item: Dict[str, str], submit_session: int, number: int
-    # ):
-    #     """提出時法律案の処理"""
-    #     submit_url = self.BILL_CONTENT_URL.format(item["URL"][2:])
-    #     soup = self.get_page_content(submit_url)
-    #     # 提出時法律案のパース処理
-    #     submit_content_parser = SubmitContentParser(soup.encode())
-    #     submit_content = submit_content_parser.parse(item["URL"])
-    #     BillSubmitContentDao.save(submit_content, submit_session, number)
+    def _process_submit_content(
+        self, item: Dict[str, str], submit_session: int, number: int
+    ):
+        """提出時法律案の処理"""
+        url = self.BILL_CONTENT_URL.format(item["URL"])
+        soup = self.get_page_content(url)
+        # 提出時法律案のパース処理
+        parser = SubmitContentParser(soup.encode())
+        submit_content = parser.parse()
+        print(submit_content)
+        BillSubmitContentDao.save(submit_content, submit_session, number)
 
     # def _process_outline(self, item: Dict[str, str], submit_session: int, number: int):
     #     """要綱の処理

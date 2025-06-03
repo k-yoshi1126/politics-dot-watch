@@ -114,3 +114,15 @@ class BaseParser(ABC):
         # './' を '/' に置換
         normalized_path = url_path.replace("./", "/")
         return normalized_path
+
+    def normalize_text(self, text: str) -> str:
+        """テキストを正規化する
+
+        Args:
+            text (str): 正規化するテキスト
+
+        Returns:
+            str: 正規化されたテキスト（全角・半角の空白を除去）
+        """
+        # 全角スペースを除去 → すべての空白（全角・半角）を1つに正規化
+        return re.sub(r"\s+", "", text)

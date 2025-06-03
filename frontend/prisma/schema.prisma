@@ -101,6 +101,44 @@ model BillContentInfoUrl {
   @@unique([submitSession, number, text])
 }
 
+// 提出時法律案モデル
+model BillSubmitContent {
+  id                        Int      @id @default(autoincrement())
+  submitSession             Int      // 提出国会回次
+  number                    Int      // 番号
+  content                   String   @db.Text  // 提出時法案内容
+  supplementaryProvisions   String   @db.Text  // 附則
+  reason                    String   @db.Text  // 理由
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([submitSession, number])
+}
+
+// 要綱モデル
+model BillOutline {
+  id                        Int      @id @default(autoincrement())
+  submitSession             Int      // 提出国会回次
+  number                    Int      // 番号
+  outline                   String   @db.Text  // 要綱
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([submitSession, number])
+}
+
+// 修正案モデル
+model BillProposedAmendment {
+  id                        Int      @id @default(autoincrement())
+  submitSession             Int      // 提出国会回次
+  number                    Int      // 番号
+  proposedAmendment         String   @db.Text  // 修正案
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([submitSession, number])
+}
+
 // 投稿モデル
 model Post {
   id        String   @id @default(cuid())
