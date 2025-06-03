@@ -10,9 +10,7 @@ class BillProposedAmendmentDao:
     """修正案のデータベースアクセスオブジェクト"""
 
     @staticmethod
-    def save(
-        amendment_data: Dict[str, Union[str, int]], submit_session: int, number: int
-    ) -> None:
+    def save(amendment_data: Dict[str, str], submit_session: int, number: int) -> None:
         """スクレイピングした修正案をデータベースに保存"""
         try:
             # データベースに接続

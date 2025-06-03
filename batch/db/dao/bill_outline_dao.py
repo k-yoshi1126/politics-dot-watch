@@ -10,9 +10,7 @@ class BillOutlineDao:
     """要綱のデータベースアクセスオブジェクト"""
 
     @staticmethod
-    def save(
-        outline_data: Dict[str, Union[str, int]], submit_session: int, number: int
-    ) -> None:
+    def save(outline_data: Dict[str, str], submit_session: int, number: int) -> None:
         """スクレイピングした要綱をデータベースに保存"""
         try:
             # データベースに接続

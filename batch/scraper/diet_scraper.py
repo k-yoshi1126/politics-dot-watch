@@ -100,22 +100,22 @@ class DietScraper(BaseScraper):
         return bill_list
 
     def test(self, session: str):
-        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/youkou/g19605042.htm"
+        url = "https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/youkou/g19505005.htm"
         soup = self.get_page_content(url)
+        # parser = AmendmentParser(soup.encode())
+        # amendment = parser.parse()
+        # BillProposedAmendmentDao.save(amendment, 196, 42)
+        # print(amendment)
         parser = OutlineParser(soup.encode())
         outline = parser.parse()
         print(outline)
-        BillOutlineDao.save(outline, 196, 42)
-        # parser = BillContentInfoListParser(soup.encode())
-        # bill_content_info_list = parser.parse()
-        # print(bill_content_info_list)
-        # # HTMLの内容を出力
-        # try:
-        #     with open("result.html", "w", encoding="utf-8") as f:
-        #         f.write(str(soup.prettify()))
-        #     print("✅ HTMLの出力に成功しました")
-        # except Exception as e:
-        #     print(f"❌ HTMLの出力に失敗: {e}")
+        # HTMLの内容を出力
+        try:
+            with open("result.html", "w", encoding="utf-8") as f:
+                f.write(str(soup.prettify()))
+            print("✅ HTMLの出力に成功しました")
+        except Exception as e:
+            print(f"❌ HTMLの出力に失敗: {e}")
 
     def scrape_progress_info(self, bill_list: List[List[str]], session: str):
         """議案審議経過情報をスクレイピング"""
@@ -164,8 +164,11 @@ class DietScraper(BaseScraper):
                 self._process_submit_content(soup, submit_session, number)
             elif item["テキスト"] == "[要綱]":
                 self._process_outline(soup, submit_session, number)
-            # elif item["テキスト"] == "修正案":
-            #     self._process_amendment(item, submit_session, number)
+            elif "修正案" in item["テキスト"]:
+                self._process_amendment(soup, submit_session, number)
+            else:
+                print(f"リンクが未対応のテキストです: {item['テキスト']}")
+                raise ValueError(f"リンクが未対応のテキストです: {item['テキスト']}")
 
     def _process_submit_content(
         self, soup: BeautifulSoup, submit_session: int, number: int
@@ -187,22 +190,14 @@ class DietScraper(BaseScraper):
         outline = parser.parse()
         BillOutlineDao.save(outline, submit_session, number)
 
-    # def _process_amendment(
-    #     self, item: Dict[str, str], submit_session: int, number: int
-    # ):
-    #     """修正案の処理
+    def _process_amendment(self, soup: BeautifulSoup, submit_session: int, number: int):
+        """修正案の処理
 
-    #     Args:
-    #         item (Dict[str, str]): 保存されたデータ
-    #         submit_session (int): 提出国会回次
-    #         number (int): 番号
-    #     """
-    #     amendment_url = (
-    #         f"https://www.shugiin.go.jp/internet/itdb_gian.nsf/html/gian/honbun/"
-    #         + item["URL"][2:]
-    #     )
-    #     soup = self.get_page_content(amendment_url)
-    #     # 修正案のパース処理
-    #     amendment_parser = AmendmentParser(soup.encode())
-    #     amendment = amendment_parser.parse(item["URL"])
-    #     BillProposedAmendmentDao.save(amendment, submit_session, number)
+        Args:
+            soup (BeautifulSoup): URLから取得したデータ
+            submit_session (int): 提出国会回次
+            number (int): 番号
+        """
+        parser = AmendmentParser(soup.encode())
+        amendment = parser.parse()
+        BillProposedAmendmentDao.save(amendment, submit_session, number)

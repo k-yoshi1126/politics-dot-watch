@@ -7,6 +7,7 @@ from japanera import EraDate, Era
 import chardet
 from abc import ABC, abstractmethod
 import jaconv
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,15 @@ class BaseParser(ABC):
         encoding = result["encoding"]
 
         # 文字コードを指定してデコード
-        html_str = html_content.decode(encoding)
+        try:
+            html_str = html_content.decode(encoding)
+        except UnicodeDecodeError:
+            # デコードに失敗した場合は、UTF-8で試行
+            try:
+                html_str = html_content.decode("utf-8")
+            except UnicodeDecodeError:
+                # UTF-8でも失敗した場合は、CP932（Windows-31J）で試行
+                html_str = html_content.decode("cp932", errors="replace")
 
         # BeautifulSoupオブジェクトを生成
         self.soup = BeautifulSoup(html_str, "html.parser")
@@ -129,20 +138,26 @@ class BaseParser(ABC):
         return re.sub(r"\s+", "", text)
 
     def normalize_text_format(self, text: str) -> str:
-        """テキストの形式を正規化する
+        """テキストのフォーマットを正規化する
 
         Args:
             text (str): 正規化するテキスト
 
         Returns:
             str: 正規化されたテキスト
-            - 連続する全角空白は削除
-            - 1つの全角空白は半角空白に変換
-            - 全角数字は半角数字に変換
         """
-        # 全角数字を半角数字に変換
+        # よくある文字化けパターン（1文字＋@）を削除
+        text = re.sub(r"[一-龯ぁ-んァ-ンａ-ｚＡ-Ｚ0-9]@", "", text)
+        # REPLACEMENT CHARACTER（�）を除去
+        text = text.replace("\ufffd", "")
+        # 制御文字（カテゴリが "C" で始まる文字）を除去
+        text = "".join(
+            char for char in text if not unicodedata.category(char).startswith("C")
+        )
+        # 全角数字を半角に変換
         text = jaconv.z2h(text, digit=True, ascii=False)
-        # 連続する全角空白を1つの半角空白に変換
-        text = re.sub(r"\u3000+", " ", text)
+        # 連続する全角スペースを1つの半角スペースに置換
+        text = re.sub(r"　+", " ", text)
         # 先頭と末尾の空白を削除
-        return text.strip()
+        text = text.strip()
+        return text
