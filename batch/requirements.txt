@@ -8,3 +8,6 @@ rich==13.7.0
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 sqlalchemy==2.0.25
+japanera==2.1.2
+chardet==5.2.0
+jaconv==0.3.4

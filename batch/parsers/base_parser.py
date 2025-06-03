@@ -6,6 +6,7 @@ import re
 from japanera import EraDate, Era
 import chardet
 from abc import ABC, abstractmethod
+import jaconv
 
 logger = logging.getLogger(__name__)
 
@@ -126,3 +127,22 @@ class BaseParser(ABC):
         """
         # 全角スペースを除去 → すべての空白（全角・半角）を1つに正規化
         return re.sub(r"\s+", "", text)
+
+    def normalize_text_format(self, text: str) -> str:
+        """テキストの形式を正規化する
+
+        Args:
+            text (str): 正規化するテキスト
+
+        Returns:
+            str: 正規化されたテキスト
+            - 連続する全角空白は削除
+            - 1つの全角空白は半角空白に変換
+            - 全角数字は半角数字に変換
+        """
+        # 全角数字を半角数字に変換
+        text = jaconv.z2h(text, digit=True, ascii=False)
+        # 連続する全角空白を1つの半角空白に変換
+        text = re.sub(r"\u3000+", " ", text)
+        # 先頭と末尾の空白を削除
+        return text.strip()
