@@ -24,12 +24,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
+        cache-dependency-path: batch/requirements.txt
 
     - name: Set up Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
 
     - name: Install Python dependencies
       run: |
@@ -38,16 +40,14 @@ jobs:
         pip install pytest
 
     - name: Install Node.js dependencies
-      run: |
-        cd frontend
-        npm ci
+      working-directory: frontend
+      run: npm ci
 
     - name: Run Python tests
+      working-directory: batch
       run: |
-        cd batch
         PYTHONPATH=$PYTHONPATH:. pytest tests/
 
     - name: Run Node.js tests
-      run: |
-        cd frontend
-        npx vitest run
+      working-directory: frontend
+      run: npx vitest run
