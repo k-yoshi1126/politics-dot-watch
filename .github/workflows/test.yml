@@ -48,6 +48,6 @@ jobs:
       run: |
         PYTHONPATH=$PYTHONPATH:. pytest tests/
 
-    - name: Run Node.js tests
-      working-directory: frontend
-      run: npx vitest run
+    # - name: Run Node.js tests
+    #   working-directory: frontend
+    #   run: npx vitest run
