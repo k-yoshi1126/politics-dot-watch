@@ -3,7 +3,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { VoteButtons } from "@/components/vote-buttons"
-import { Calendar, User, Filter, ArrowUpDown } from "lucide-react"
+import { Calendar, User, Filter, ArrowUpDown, Landmark } from "lucide-react"
 import { Search } from "@/components/search"
 import {
   Pagination,
@@ -18,6 +18,7 @@ import { cookies } from "next/headers"
 import { getUserVotes } from "@/lib/auth"
 import { Card, CardContent } from "@/components/ui/card"
 import { CategoryTabs } from "@/components/category-tabs"
+import { prisma } from "@/lib/prisma"
 
 interface BillsPageProps {
   searchParams: {
@@ -27,6 +28,17 @@ interface BillsPageProps {
     sort?: string
     page?: string
   }
+}
+
+interface Bill {
+  id: string;
+  title: string;
+  summary: string;
+  status: string;
+  category: string;
+  submittedDate: string;
+  submittedBy: string;
+  submitterParty: string;
 }
 
 function MobileCategoryTabs({ category }: { category?: string }) {
@@ -72,7 +84,7 @@ function MobileCategoryTabs({ category }: { category?: string }) {
   )
 }
 
-export default function BillsPage({ searchParams }: BillsPageProps) {
+export default async function BillsPage({ searchParams }: BillsPageProps) {
   const cookieStore = cookies()
   const userCookie = cookieStore.get("currentUser")
   const currentUser = userCookie ? JSON.parse(userCookie.value) : null
@@ -80,92 +92,94 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
   // ユーザーの投票情報を取得
   const userVotes = currentUser ? getUserVotes(currentUser.id) : []
 
-  const { q, category, status, sort } = searchParams
+  const { q, category, status, sort, page = "1" } = searchParams
+  const currentPage = parseInt(page)
+  const itemsPerPage = 10
 
-  // 実際の実装ではAPIからデータを取得します
-  // 検索クエリやカテゴリに基づいてフィルタリングする
-  let bills = [
-    {
-      id: "bill-2023-001",
-      title: "デジタル社会形成基本法の一部を改正する法律案",
-      summary:
-        "デジタル社会の形成に関する施策を総合的かつ効果的に推進するため、デジタル社会形成基本法の一部を改正し、基本理念の追加、国の責務の明確化等を行う。",
-      status: "審議中",
-      category: "デジタル",
-      submittedDate: "2023-10-15",
-      submittedBy: "内閣",
-    },
-    {
-      id: "bill-2023-002",
-      title: "地域における再生可能エネルギーの導入の促進に関する法律案",
-      summary:
-        "地域における再生可能エネルギーの導入を促進するため、市町村による再生可能エネルギー導入促進区域の指定、事業計画の認定制度等を創設する。",
-      status: "可決",
-      category: "環境",
-      submittedDate: "2023-09-05",
-      submittedBy: "環境省",
-    },
-    {
-      id: "bill-2023-003",
-      title: "子ども・子育て支援法の一部を改正する法律案",
-      summary:
-        "子ども・子育て支援の充実を図るため、子ども・子育て支援法の一部を改正し、保育の質の向上、待機児童解消のための措置等を講ずる。",
-      status: "審議中",
-      category: "福祉",
-      submittedDate: "2023-11-20",
-      submittedBy: "厚生労働省",
-    },
-    {
-      id: "bill-2023-004",
-      title: "労働基準法の一部を改正する法律案",
-      summary:
-        "多様な働き方に対応するため、労働基準法の一部を改正し、フレックスタイム制の拡充、テレワークに関する規定の整備等を行う。",
-      status: "審議中",
-      category: "労働",
-      submittedDate: "2023-12-01",
-      submittedBy: "厚生労働省",
-    },
-    {
-      id: "bill-2023-005",
-      title: "地方税法の一部を改正する法律案",
-      summary:
-        "地方税制の見直しを行うため、地方税法の一部を改正し、固定資産税の評価方法の見直し、ふるさと納税制度の改正等を行う。",
-      status: "審議中",
-      category: "地方",
-      submittedDate: "2023-11-28",
-      submittedBy: "総務省",
-    },
-    {
-      id: "bill-2023-006",
-      title: "高等教育の修学支援に関する法律案",
-      summary:
-        "高等教育の修学支援の充実を図るため、高等教育の修学支援に関する法律の一部を改正し、支援対象者の拡大、支援内容の充実等を行う。",
-      status: "審議前",
-      category: "教育",
-      submittedDate: "2023-12-05",
-      submittedBy: "文部科学省",
-    },
-    {
-      id: "bill-2023-007",
-      title: "デジタル手続法の一部を改正する法律案",
-      summary:
-        "行政手続のデジタル化を推進するため、デジタル手続法の一部を改正し、オンライン化の対象範囲の拡大、本人確認方法の多様化等を行う。",
-      status: "審議中",
-      category: "デジタル",
-      submittedDate: "2023-11-10",
-      submittedBy: "デジタル庁",
-    },
-    {
-      id: "bill-2023-008",
-      title: "マイナンバー法の一部を改正する法律案",
-      summary:
-        "マイナンバー制度の利便性向上と安全性確保のため、マイナンバー法の一部を改正し、利用範囲の拡大、本人同意に基づく情報連携の拡充等を行う。",
-      status: "審議前",
-      category: "デジタル",
-      submittedDate: "2023-11-25",
-      submittedBy: "デジタル庁",
-    },
-  ]
+  // DBから法案データを取得
+  let bills: Bill[] = [];
+  let totalCount = 0;
+  try {
+    // 総件数を取得
+    totalCount = await prisma.dietSessionInfo.count();
+
+    // ページネーション用のデータを取得
+    const dbBills = await prisma.dietSessionInfo.findMany({
+      skip: (currentPage - 1) * itemsPerPage,
+      take: itemsPerPage,
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: {
+        session: true,
+        submitSession: true,
+        number: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        // BillProgressは後で個別取得するため、ここでは取得しない
+        // billProgress: {
+        //   select: {
+        //     submitter: true,
+        //     submitterParty: true,
+        //     billType: true,
+        //     houseReviewDate: true
+        //   }
+        // }
+      }
+    });
+
+    // 各法案の詳細なBillProgress情報を取得し、提出日を決定
+    // 注意: このアプローチはN+1問題を引き起こす可能性があります。
+    // パフォーマンスが問題になる場合は、より効率的なクエリ設計を検討する必要があります。
+    bills = await Promise.all(dbBills.map(async (bill) => {
+
+      const billProgressEntries = await prisma.billProgress.findMany({
+        where: {
+          submitSession: bill.submitSession,
+          number: bill.number,
+          billType: '衆法',
+          houseReviewDate: { not: null }
+        },
+        orderBy: {
+          session: 'asc'
+        }
+      });
+
+      const submittedDateFromProgress = billProgressEntries.length > 0
+        ? billProgressEntries[0].houseReviewDate?.toLocaleDateString('ja-JP') || "不明"
+        : "不明"; // 条件を満たさない場合は「不明」
+
+      // 提出者と提出会派は、BillProgressテーブルから取得可能な最初のエントリを使用
+      const submitterInfo = await prisma.billProgress.findFirst({
+        where: {
+          submitSession: bill.submitSession,
+          number: bill.number
+        },
+        select: {
+          submitter: true,
+          submitterParty: true
+        },
+        orderBy: {
+          session: 'asc' // 複数ある場合、最も古いセッションの情報を使用
+        }
+      });
+
+      return {
+        id: `bill-${bill.submitSession}-${bill.number}`,
+        title: bill.title,
+        summary: "法案の要約情報は現在準備中です。", // 要約情報はDBにないため、ハードコーディング
+        status: bill.status,
+        category: "デジタル", // カテゴリはDBにないため、ハードコーディング
+        submittedDate: submittedDateFromProgress,
+        submittedBy: submitterInfo?.submitter || "不明",
+        submitterParty: submitterInfo?.submitterParty || "不明"
+      };
+    }));
+
+  } catch (error) {
+    console.error('法案データの取得に失敗しました:', error);
+  }
 
   // カテゴリの英語名と日本語名のマッピングを追加します
   const categoryNameMap: { [key: string]: string } = {
@@ -199,10 +213,12 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
   // ステータスによるフィルタリング
   if (status && status !== "all") {
     const statusMap: { [key: string]: string } = {
-      pending: "審議前",
-      "in-progress": "審議中",
-      approved: "可決",
-      rejected: "否決",
+      pending: "未了",
+      "in-progress": "衆議院で審議中",
+      "council-in-progress": "参議院で審議中",
+      "house-closed": "衆議院で閉会中審査",
+      "passed": "成立",
+      "withdrawn": "撤回"
     }
     const statusValue = statusMap[status]
     if (statusValue) {
@@ -231,8 +247,47 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
     bills.sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime())
   }
 
+  const totalPages = Math.ceil(totalCount / itemsPerPage)
   const categoryDisplayName = category ? categoryNameMap[category] || category : ""
   const searchTerm = q || category ? (q ? `"${q}"` : `カテゴリ: ${categoryDisplayName}`) : ""
+
+  // 修正されたページネーションロジック
+  const pagesToShow: (number | '...')[] = [];
+  const maxVisiblePages = 5;
+
+  if (totalPages <= maxVisiblePages) {
+    for (let i = 1; i <= totalPages; i++) {
+      pagesToShow.push(i);
+    }
+  } else {
+    if (currentPage <= 3) {
+      for (let i = 1; i <= 4; i++) {
+        pagesToShow.push(i);
+      }
+      if (totalPages > 5) {
+        pagesToShow.push('...');
+      }
+    } else if (currentPage >= totalPages - 2) {
+      pagesToShow.push(1);
+      if (totalPages > 5) {
+        pagesToShow.push('...');
+      }
+      for (let i = totalPages - 3; i <= totalPages; i++) {
+        if (i > 1) {
+          pagesToShow.push(i);
+        }
+      }
+    } else {
+      pagesToShow.push(1);
+      pagesToShow.push('...');
+
+      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        pagesToShow.push(i);
+      }
+
+      pagesToShow.push('...');
+    }
+  }
 
   return (
     <div className="politics-dot-watch-container py-4 md:py-6">
@@ -276,10 +331,12 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">すべてのステータス</SelectItem>
-                <SelectItem value="pending">審議前</SelectItem>
-                <SelectItem value="in-progress">審議中</SelectItem>
-                <SelectItem value="approved">可決</SelectItem>
-                <SelectItem value="rejected">否決</SelectItem>
+                <SelectItem value="pending">未了</SelectItem>
+                <SelectItem value="in-progress">衆議院で審議中</SelectItem>
+                <SelectItem value="council-in-progress">参議院で審議中</SelectItem>
+                <SelectItem value="house-closed">衆議院で閉会中審査</SelectItem>
+                <SelectItem value="passed">成立</SelectItem>
+                <SelectItem value="withdrawn">撤回</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -311,8 +368,17 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
               <div key={bill.id} className="bill-card">
                 <div className="flex gap-2 mb-2">
                   <Badge
-                    variant={bill.status === "可決" ? "default" : bill.status === "審議中" ? "secondary" : "outline"}
-                    className={bill.status === "可決" ? "bg-primary hover:bg-primary/90" : ""}
+                    variant={
+                      bill.status === "成立" ? "default" :
+                        bill.status === "衆議院で審議中" || bill.status === "参議院で審議中" || bill.status === "衆議院で閉会中審査" ? "secondary" :
+                          bill.status === "撤回" ? "destructive" :
+                            "outline"
+                    }
+                    className={
+                      bill.status === "成立" ? "bg-primary hover:bg-primary/90" :
+                        bill.status === "撤回" ? "bg-destructive hover:bg-destructive/90" :
+                          ""
+                    }
                   >
                     {bill.status}
                   </Badge>
@@ -340,17 +406,29 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
                     </h3>
                     <p className="text-gray-600 text-sm mb-3">{bill.summary}</p>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-1 text-xs text-gray-500 overflow-hidden sm:flex-grow sm:basis-0">
+                        <div className="flex items-center gap-1">
+                          <Landmark className="h-3 w-3" />
+                          <span
+                            className="
+                                  truncate whitespace-nowrap overflow-hidden        /* 0〜639px ＝モバイルで省略 */
+                                  sm:whitespace-normal sm:overflow-visible          /* 640px 以上では全文表示 */
+                                "
+                          >
+                            提出会派: {bill.submitterParty}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 flex-shrink-0 sm:flex-grow sm:basis-0 sm:justify-end">
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          <span>提出: {bill.submittedBy}</span>
+                          <span className="truncate">提出者: {bill.submittedBy}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{bill.submittedDate}</span>
+                          <span>提出日: {bill.submittedDate}</span>
                         </div>
                       </div>
-                      <VoteButtons billId={bill.id} compact initialVote={billVote} />
+                      {/* <VoteButtons billId={bill.id} compact initialVote={billVote} /> */}
                     </div>
                   </div>
                 </div>
@@ -372,27 +450,46 @@ export default function BillsPage({ searchParams }: BillsPageProps) {
         </Card>
       )}
 
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious href="#" />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#" isActive>
-              1
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#">2</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#">3</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext href="#" />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      {/* ページネーション */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationLink
+                href={`/bills?page=${currentPage > 1 ? currentPage - 1 : 1}${q ? `&q=${q}` : ''}${category ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}${sort ? `&sort=${sort}` : ''}`}
+                className={`pagination-link ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <span className="sr-only">Previous</span>
+                &lt;
+              </PaginationLink>
+            </PaginationItem>
+            {pagesToShow.map((pageNum, index) => (
+              <PaginationItem key={index}>
+                {pageNum === '...' ? (
+                  <span className="px-3 py-2">...</span>
+                ) : (
+                  <PaginationLink
+                    href={`/bills?page=${pageNum}${q ? `&q=${q}` : ''}${category ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}${sort ? `&sort=${sort}` : ''}`}
+                    isActive={currentPage === pageNum}
+                    className="pagination-link"
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                )}
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationLink
+                href={`/bills?page=${currentPage < totalPages ? currentPage + 1 : totalPages}${q ? `&q=${q}` : ''}${category ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}${sort ? `&sort=${sort}` : ''}`}
+                className={`pagination-link ${currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <span className="sr-only">Next</span>
+                &gt;
+              </PaginationLink>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
 }

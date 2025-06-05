@@ -8,6 +8,8 @@ import { Share2, Calendar, Building, ArrowLeft, MessageSquare, Bookmark } from "
 import { cookies } from "next/headers"
 import { getUserVotes } from "@/lib/auth"
 import { getBillImagePath } from "@/lib/utils"
+import { prisma } from "@/lib/prisma"
+import { notFound } from "next/navigation"
 
 interface BillPageProps {
   params: {
@@ -15,7 +17,7 @@ interface BillPageProps {
   }
 }
 
-export default function BillPage({ params }: BillPageProps) {
+export default async function BillPage({ params }: BillPageProps) {
   const cookieStore = cookies()
   const userCookie = cookieStore.get("currentUser")
   const currentUser = userCookie ? JSON.parse(userCookie.value) : null
@@ -26,58 +28,104 @@ export default function BillPage({ params }: BillPageProps) {
   // この法案への投票を取得
   const billVote = (userVotes.find((v) => v.billId === params.id)?.vote || null) as "agree" | "disagree" | null
 
-  // 実際の実装ではAPIからデータを取得します
+  // 法案IDから提出国会回次と番号を抽出
+  const billIdParts = params.id.replace('bill-', '').split('-')
+  if (billIdParts.length !== 2) {
+    console.error('Invalid bill ID format:', params.id)
+    notFound()
+  }
+
+  const [submitSession, number] = billIdParts.map(Number)
+  if (isNaN(submitSession) || isNaN(number)) {
+    console.error('Invalid bill ID numbers:', { submitSession, number })
+    notFound()
+  }
+
+  console.log('Fetching bill with params:', { submitSession, number })
+
+  // データベースから法案データを取得
+  const dbBill = await prisma.billProgress.findFirst({
+    where: {
+      submitSession: submitSession,
+      number: number
+    },
+    include: {
+      dietSessionInfo: true
+    }
+  })
+
+  if (!dbBill) {
+    console.error('Bill not found:', { submitSession, number })
+    notFound()
+  }
+
+  // 法案の本文を取得
+  const billContent = await prisma.billSubmitContent.findUnique({
+    where: {
+      submitSession_number: {
+        submitSession: submitSession,
+        number: number
+      }
+    }
+  })
+
+  // 法案の審議履歴を取得
+  const billHistory = await prisma.dietSessionInfo.findMany({
+    where: {
+      submitSession: submitSession,
+      number: number
+    },
+    orderBy: {
+      session: 'asc'
+    }
+  })
+
+  // BillProgressから提出日を探す
+  const billProgressEntries = await prisma.billProgress.findMany({
+    where: {
+      submitSession: submitSession,
+      number: number,
+      billType: '衆法',
+      houseReviewDate: { not: null }
+    },
+    orderBy: {
+      session: 'asc'
+    }
+  })
+
+  const submittedDateFromProgress = billProgressEntries.length > 0
+    ? billProgressEntries[0].houseReviewDate?.toLocaleDateString('ja-JP')
+    : null
+
+  console.log('Found bill:', dbBill)
+  console.log('Found bill content:', billContent)
+  console.log('Found bill history:', billHistory)
+  console.log('Found bill progress entries for submittedDate:', billProgressEntries)
+
+  // 法案データを整形
   const bill = {
     id: params.id,
-    title: "デジタル社会形成基本法の一部を改正する法律案",
-    summary:
-      "デジタル社会の形成に関する施策を総合的かつ効果的に推進するため、デジタル社会形成基本法の一部を改正し、基本理念の追加、国の責務の明確化等を行う。",
-    status: "審議中",
-    category: "デジタル",
-    submittedDate: "2023-10-15",
-    submittedBy: "内閣",
-    fullText: `
-      第一条 デジタル社会形成基本法（令和三年法律第三十五号）の一部を次のように改正する。
-      
-      目次中「第四章 基本的施策（第十七条―第三十条）」を「第四章 基本的施策（第十七条―第三十一条）」に改める。
-      
-      第二条に次の一項を加える。
-      ２ この法律において「デジタルファースト」とは、個人又は法人の手続について、デジタル技術を活用して行うことを基本とすることをいう。
-      
-      第三条第五項中「並びに」を「、」に改め、「推進されなければならない」の下に「、並びにデジタルファーストの原則が適切に実現されなければならない」を加える。
-      
-      第四条第二項中「前項」を「第一項」に改め、同項を同条第三項とし、同条第一項の次に次の一項を加える。
-      ２ 国は、デジタル社会の形成に関する施策を総合的に策定し、及び実施する責務を有する。
-    `,
-    aiSummary: `
-      この法案は、デジタル社会形成基本法を改正し、以下の変更を行うものです：
-
-      1. 「デジタルファースト」の概念を新たに定義（第二条）
-      2. デジタルファーストの原則を基本理念に追加（第三条）
-      3. デジタル社会形成に関する国の責務を明確化（第四条）
-      4. 基本的施策の範囲を拡大（目次の改正）
-
-      この改正により、行政手続きや各種サービスにおいて、デジタル技術を活用した方法を基本とする「デジタルファースト」の原則が法的に位置づけられ、国がデジタル社会形成に関する施策を総合的に策定・実施する責務が明確化されます。
-    `,
+    title: dbBill.billTitle || "法案のタイトルは現在準備中です。",
+    summary: "法案の要約情報は現在準備中です。",
+    status: dbBill.dietSessionInfo?.status || "不明",
+    category: "不明",
+    submittedDate: submittedDateFromProgress || "不明",
+    submittedBy: dbBill.submitter || "不明",
+    submitterParty: dbBill.submitterParty || "不明",
+    fullText: billContent?.content || "法案の全文は現在準備中です。",
+    supplementaryProvisions: billContent?.supplementaryProvisions || "法案の附則は現在準備中です。",
+    reason: billContent?.reason || "法案の理由は現在準備中です。",
+    aiSummary: "AIによる要約は現在準備中です。",
     impactAreas: [
-      "行政手続きのデジタル化が加速",
-      "オンライン申請が原則となる可能性",
-      "デジタル格差（デジタルディバイド）への対応が課題に",
-      "国のデジタル政策の責任範囲が拡大",
+      "影響範囲の分析は現在準備中です。",
     ],
-    timeline: [
-      { date: "2023-10-15", event: "法案提出" },
-      { date: "2023-11-05", event: "衆議院本会議で趣旨説明" },
-      { date: "2023-11-10", event: "衆議院デジタル社会形成基本法案審査小委員会で審査" },
-      { date: "2023-11-20", event: "衆議院本会議で可決" },
-      { date: "2023-12-01", event: "参議院デジタル社会特別委員会で審査中" },
-    ],
-    relatedBills: [
-      { id: "bill-2023-007", title: "デジタル手続法の一部を改正する法律案", category: "デジタル" },
-      { id: "bill-2023-008", title: "マイナンバー法の一部を改正する法律案", category: "デジタル" },
-    ],
-    commentCount: 24,
-    bookmarkCount: 156,
+    timeline: billHistory.map(history => ({
+      date: `第${history.session}回国会`,
+      event: history.status || "不明"
+    })),
+    relatedBills: [] as { id: string; title: string; category: string }[],
+    commentCount: 0,
+    bookmarkCount: 0,
   }
 
   return (
@@ -90,8 +138,17 @@ export default function BillPage({ params }: BillPageProps) {
 
         <div className="flex flex-wrap gap-2 mb-3">
           <Badge
-            variant={bill.status === "可決" ? "default" : bill.status === "審議中" ? "secondary" : "outline"}
-            className={bill.status === "可決" ? "bg-primary hover:bg-primary/90" : ""}
+            variant={
+              bill.status === "成立" ? "default" :
+              bill.status === "衆議院で審議中" || bill.status === "参議院で審議中" || bill.status === "衆議院で閉会中審査" ? "secondary" :
+              bill.status === "撤回" ? "destructive" :
+              "outline"
+            }
+            className={
+              bill.status === "成立" ? "bg-primary hover:bg-primary/90" :
+              bill.status === "撤回" ? "bg-destructive hover:bg-destructive/90" :
+              ""
+            }
           >
             {bill.status}
           </Badge>
@@ -124,6 +181,10 @@ export default function BillPage({ params }: BillPageProps) {
             <div className="flex items-center text-sm text-gray-500">
               <Building className="h-4 w-4 mr-2" />
               提出者: {bill.submittedBy}
+            </div>
+            <div className="flex items-center text-sm text-gray-500">
+              <Building className="h-4 w-4 mr-2" />
+              提出会派: {bill.submitterParty}
             </div>
           </div>
 
@@ -161,14 +222,26 @@ export default function BillPage({ params }: BillPageProps) {
               value="full-text"
               className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
             >
-              法案全文
+              改正内容
             </TabsTrigger>
             <TabsTrigger
+              value="supplementary-provisions"
+              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
+            >
+              附則
+            </TabsTrigger>
+            <TabsTrigger
+              value="reason"
+              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
+            >
+              理由
+            </TabsTrigger>
+            {/* <TabsTrigger
               value="impact"
               className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
             >
               影響範囲
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="timeline"
               className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
@@ -186,12 +259,26 @@ export default function BillPage({ params }: BillPageProps) {
 
           <TabsContent value="full-text" className="mt-0">
             <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-bold mb-4">法案全文</h2>
+              <h2 className="text-lg font-bold mb-4">改正内容</h2>
               <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.fullText}</div>
             </div>
           </TabsContent>
 
-          <TabsContent value="impact" className="mt-0">
+          <TabsContent value="supplementary-provisions" className="mt-0">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-bold mb-4">附則</h2>
+              <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.supplementaryProvisions}</div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reason" className="mt-0">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-bold mb-4">理由</h2>
+              <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.reason}</div>
+            </div>
+          </TabsContent>
+
+          {/* <TabsContent value="impact" className="mt-0">
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <h2 className="text-lg font-bold mb-4">影響範囲</h2>
               <ul className="list-disc pl-5 space-y-2 text-gray-600 text-sm">
@@ -200,7 +287,7 @@ export default function BillPage({ params }: BillPageProps) {
                 ))}
               </ul>
             </div>
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="timeline" className="mt-0">
             <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -208,7 +295,7 @@ export default function BillPage({ params }: BillPageProps) {
               <div className="relative border-l-2 border-primary/20 pl-4 ml-2 space-y-4">
                 {bill.timeline.map((item, index) => (
                   <div key={index} className="relative">
-                    <div className="absolute w-3 h-3 bg-primary rounded-full -left-[1.7rem] top-1.5"></div>
+                    <div className="absolute w-3 h-3 bg-primary rounded-full -left-[1.5rem] top-1.5"></div>
                     <p className="font-medium text-sm">{item.date}</p>
                     <p className="text-gray-600 text-sm">{item.event}</p>
                   </div>
@@ -218,35 +305,37 @@ export default function BillPage({ params }: BillPageProps) {
           </TabsContent>
         </Tabs>
 
-        <div>
-          <h2 className="section-title">関連法案</h2>
-          <div className="space-y-4">
-            {bill.relatedBills.map((relatedBill) => (
-              <div
-                key={relatedBill.id}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary hover:shadow-sm transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
-                    <Image
-                      src={`/naikaku.jpg?height=450&width=800`}
-                      alt={`${relatedBill.category}のイメージ`}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
+        {/* {bill.relatedBills.length > 0 && (
+          <div>
+            <h2 className="section-title">関連法案</h2>
+            <div className="space-y-4">
+              {bill.relatedBills.map((relatedBill) => (
+                <div
+                  key={relatedBill.id}
+                  className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={`/naikaku.jpg?height=450&width=800`}
+                        alt={`${relatedBill.category}のイメージ`}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Link
+                      href={`/bills/${relatedBill.id}`}
+                      className="font-medium hover:text-primary transition-colors text-sm"
+                    >
+                      {relatedBill.title}
+                    </Link>
                   </div>
-                  <Link
-                    href={`/bills/${relatedBill.id}`}
-                    className="font-medium hover:text-primary transition-colors text-sm"
-                  >
-                    {relatedBill.title}
-                  </Link>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )} */}
       </div>
     </div>
   )

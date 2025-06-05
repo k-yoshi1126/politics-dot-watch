@@ -4,13 +4,20 @@ import { Button } from "@/components/ui/button"
 import { Search } from "@/components/search"
 import { VoteButtons } from "@/components/vote-buttons"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, User } from "lucide-react"
+import { Calendar, Clock, User, Landmark } from "lucide-react"
 import { cookies } from "next/headers"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/pages/api/auth/[...nextauth]"
 import { CategoryTabs, MobileCategoryTabs } from "@/components/category-tabs"
+import { prisma } from "@/lib/prisma"
+import { DietSessionInfo, BillProgress, Prisma } from "@prisma/client"
 
 import React from 'react'
+
+// Define the type that matches the result of the Prisma query
+type BillProgressWithDietSession = Prisma.BillProgressGetPayload<{
+  include: { dietSessionInfo: true }
+}>;
 
 export default async function Home(): Promise<React.JSX.Element> {
   const session = await getServerSession(authOptions)
@@ -19,84 +26,165 @@ export default async function Home(): Promise<React.JSX.Element> {
   // const userVotes = currentUser ? getUserVotes(currentUser.id) : []
   const userVotes: { billId: string; vote: "agree" | "disagree" | null }[] = []
 
-  // 実際の実装ではAPIからデータを取得します
+  // DietSessionInfoから最新の法案情報を取得
+  type BillWithProgress = {
+    session: number;
+    submitSession: number;
+    number: number;
+    title: string;
+    status: string;
+    createdAt: Date;
+    billProgress: BillProgress | null; // BillProgress全体を含むように修正
+  };
+
+  // BillProgress[] を BillProgress | null に変更
+  // type BillWithMultipleProgress = {
+  //   session: number;
+  //   submitSession: number;
+  //   number: number;
+  //   title: string;
+  //   status: string;
+  //   createdAt: Date;
+  //   billProgress: BillProgress[]; // 複数のBillProgressを含む可能性を考慮
+  // };
+
+  // メインカラム用の法案データを取得
+  let mainBills: BillProgressWithDietSession[] = []; // 型を修正
+  try {
+    // 最新の提出国会回次を取得
+    const latestSubmitSession = await prisma.dietSessionInfo.findFirst({
+      orderBy: {
+        submitSession: 'desc'
+      },
+      select: {
+        submitSession: true
+      }
+    });
+
+    if (latestSubmitSession) {
+      // 最新の提出国会回次の法案を取得（メインカラム用）
+      // BillProgressを複数取得するため、DietSessionInfoから直接取得するのではなく、
+      // BillProgressからsubmitSessionとnumberでフィルタリングして取得し、DietSessionInfoをincludeする形に変更
+      mainBills = await prisma.billProgress.findMany({
+        where: {
+          submitSession: latestSubmitSession.submitSession
+          // DietSessionInfoのリレーションではなくBillProgress自体を複数取得するため、numberでのフィルタリングは後で行う
+        },
+        take: 4, // 注目の法案1件と最新の法案3件分
+        orderBy: {
+          number: 'asc' // 法案番号でソート
+        },
+        include: {
+          dietSessionInfo: true // DietSessionInfo情報も取得
+        },
+        distinct: ['number'] // 法案番号の重複を排除
+      });
+      console.log('メインカラム用の法案データ:', mainBills);
+    }
+  } catch (error) {
+    console.error('メインカラム用の法案データの取得に失敗しました:', error);
+  }
+
+  // サイドカラム用の法案データを取得
+  let sideBills: BillProgressWithDietSession[] = []; // 型を修正
+  try {
+    // 最新の提出国会回次を取得 (mainBills取得時に取得済みだが、可読性のため再度)
+    const latestSubmitSession = await prisma.dietSessionInfo.findFirst({
+      orderBy: {
+        submitSession: 'desc'
+      },
+      select: {
+        submitSession: true
+      }
+    });
+
+    if (latestSubmitSession) {
+      // 最新の提出国会回次の法案を取得（サイドカラム用）
+      // BillProgressを複数取得するため、DietSessionInfoから直接取得するのではなく、
+      // BillProgressからsubmitSessionとnumberでフィルタリングして取得し、DietSessionInfoをincludeする形に変更
+      sideBills = await prisma.billProgress.findMany({
+        where: {
+          submitSession: latestSubmitSession.submitSession
+           // DietSessionInfoのリレーションではなくBillProgress自体を複数取得するため、numberでのフィルタリングは後で行う
+        },
+        take: 5,
+        orderBy: {
+          number: 'asc' // 法案番号でソート
+        },
+        include: {
+          dietSessionInfo: true // DietSessionInfo情報も取得
+        },
+        distinct: ['number'] // 法案番号の重複を排除
+      });
+      console.log('サイドカラム用の法案データ:', sideBills);
+    }
+  } catch (error) {
+    console.error('サイドカラム用の法案データの取得に失敗しました:', error);
+  }
+
+  // submittedDateを決定するヘルパー関数
+  const getSubmittedDate = (billProgressEntries: BillProgress[] | null) => {
+    if (!billProgressEntries || billProgressEntries.length === 0) {
+      return "不明";
+    }
+
+    // billTypeが「衆法」でhouseReviewDateが存在するものをフィルタリング
+    const filteredEntries = billProgressEntries.filter(entry =>
+      entry.billType === '衆法' && entry.houseReviewDate !== null
+    );
+
+    if (filteredEntries.length === 0) {
+      return "不明";
+    }
+
+    // sessionが最も小さいものでソート
+    filteredEntries.sort((a, b) => a.session - b.session);
+
+    // 最も小さいsessionのhouseReviewDateを返す
+    return filteredEntries[0].houseReviewDate?.toLocaleDateString('ja-JP') || "不明";
+  };
+
+  // 注目の法案（最新の法案）
   const featuredBill = {
-    id: "bill-2023-001",
-    title: "デジタル社会形成基本法の一部を改正する法律案",
-    summary:
-      "デジタル社会の形成に関する施策を総合的かつ効果的に推進するため、デジタル社会形成基本法の一部を改正し、基本理念の追加、国の責務の明確化等を行う。",
-    status: "審議中",
-    category: "デジタル",
-    submittedDate: "2023-10-15",
-    submittedBy: "内閣",
+    id: mainBills[0] ? `bill-${mainBills[0].submitSession}-${mainBills[0].number}` : "不明",
+    title: mainBills[0]?.billTitle || mainBills[0]?.dietSessionInfo?.title || "法案情報なし",
+    summary: "法案の要約情報は現在準備中です。",
+    status: mainBills[0]?.dietSessionInfo?.status || "不明",
+    category: "デジタル", // ハードコーディング
+    // submittedDateをBillProgressから取得するように変更
+    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接mainBills[0]を配列として渡す
+    submittedDate: getSubmittedDate(mainBills[0] ? [mainBills[0]] : null),
+    submittedBy: mainBills[0]?.submitter || "不明",
     curator: "政治ドットウォッチ編集部",
   }
 
-  const recentBills = [
-    {
-      id: "bill-2023-002",
-      title: "地域における再生可能エネルギーの導入の促進に関する法律案",
-      summary:
-        "地域における再生可能エネルギーの導入を促進するため、市町村による再生可能エネルギー導入促進区域の指定、事業計画の認定制度等を創設する。",
-      status: "可決",
-      category: "環境",
-      submittedDate: "2023-09-05",
-      submittedBy: "環境省",
-    },
-    {
-      id: "bill-2023-003",
-      title: "子ども・子育て支援法の一部を改正する法律案",
-      summary:
-        "子ども・子育て支援の充実を図るため、子ども・子育て支援法の一部を改正し、保育の質の向上、待機児童解消のための措置等を講ずる。",
-      status: "審議中",
-      category: "福祉",
-      submittedDate: "2023-11-20",
-      submittedBy: "厚生労働省",
-    },
-    {
-      id: "bill-2023-004",
-      title: "労働基準法の一部を改正する法律案",
-      summary:
-        "多様な働き方に対応するため、労働基準法の一部を改正し、フレックスタイム制の拡充、テレワークに関する規定の整備等を行う。",
-      status: "審議中",
-      category: "労働",
-      submittedDate: "2023-12-01",
-      submittedBy: "厚生労働省",
-    },
-  ]
+  // 最新の法案（2番目以降の法案）
+  const recentBills = mainBills.slice(1, 4).map(bill => ({
+    id: `bill-${bill.submitSession}-${bill.number}`,
+    title: bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
+    summary: "法案の要約情報は現在準備中です。",
+    status: bill.dietSessionInfo?.status || "不明",
+    category: "デジタル", // ハードコーディング
+     // submittedDateをBillProgressから取得するように変更
+    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接billを配列として渡す
+    submittedDate: getSubmittedDate([bill]),
+    submittedBy: bill.submitter || "不明",
+  }))
 
-  const popularBills = [
-    {
-      id: "bill-2023-005",
-      title: "地方税法の一部を改正する法律案",
-      summary:
-        "地方税制の見直しを行うため、地方税法の一部を改正し、固定資産税の評価方法の見直し、ふるさと納税制度の改正等を行う。",
-      status: "審議中",
-      category: "地方",
-      submittedDate: "2023-11-28",
-      voteCount: 1245,
-    },
-    {
-      id: "bill-2023-006",
-      title: "高等教育の修学支援に関する法律案",
-      summary:
-        "高等教育の修学支援の充実を図るため、高等教育の修学支援に関する法律の一部を改正し、支援対象者の拡大、支援内容の充実等を行う。",
-      status: "審議前",
-      category: "教育",
-      submittedDate: "2023-12-05",
-      voteCount: 987,
-    },
-    {
-      id: "bill-2023-007",
-      title: "デジタル手続法の一部を改正する法律案",
-      summary:
-        "行政手続のデジタル化を推進するため、デジタル手続法の一部を改正し、オンライン化の対象範囲の拡大、本人確認方法の多様化等を行う。",
-      status: "審議中",
-      category: "デジタル",
-      submittedDate: "2023-11-10",
-      voteCount: 876,
-    },
-  ]
+  // 人気の法案（サイドカラム用）
+  const popularBills = sideBills.map(bill => ({
+    id: `bill-${bill.submitSession}-${bill.number}`,
+    title: bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
+    summary: "法案の要約情報は現在準備中です。",
+    status: bill.dietSessionInfo?.status || "不明",
+    category: "デジタル", // ハードコーディング
+     // submittedDateをBillProgressから取得するように変更
+    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接billを配列として渡す
+    submittedDate: getSubmittedDate([bill]),
+    submitterParty: bill.submitterParty || "不明",
+    submittedBy: bill.submitter || "不明",
+    voteCount: Math.floor(Math.random() * 1000) + 500, // 仮の投票数
+  }))
 
   // ユーザーの投票情報から、featuredBillへの投票を取得
   const featuredBillVote = userVotes.find((v) => v.billId === featuredBill.id)?.vote || null
@@ -296,15 +384,27 @@ export default async function Home(): Promise<React.JSX.Element> {
                           {bill.status}
                         </Badge>
                         <span>{bill.category}</span>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{bill.submittedDate}</span>
-                        </div>
+                        {/* <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          <span>{bill.submittedBy}</span>
+                        </div> */}
                       </div>
-                      <div className="flex items-center gap-1 text-xs">
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                        <Landmark className="h-3 w-3" />
+                        <span>{bill.submitterParty}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                        <User className="h-3 w-3" />
+                        <span>{bill.submittedBy}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>{bill.submittedDate}</span>
+                      </div>
+                      {/* <div className="flex items-center gap-1 text-xs">
                         <span className="text-gray-500">投票数:</span>
                         <span className="font-medium">{bill.voteCount}</span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
