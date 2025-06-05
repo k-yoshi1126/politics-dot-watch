@@ -71,6 +71,11 @@ class BillProgressParser(BaseParser):
                                             for date_key in ["年月日", "日付"]
                                         ):
                                             result[key] = self._parse_date(values[j])
+                                        # 議案提出者の変換
+                                        elif key == "議案提出者":
+                                            result[key] = self.convert_submitter_format(
+                                                self._convert_empty_to_none(values[j])
+                                            )
                                         # その他のフィールド
                                         else:
                                             result[key] = self._convert_empty_to_none(

@@ -8,6 +8,7 @@ import chardet
 from abc import ABC, abstractmethod
 import jaconv
 import unicodedata
+import kanjize
 
 logger = logging.getLogger(__name__)
 
@@ -161,3 +162,37 @@ class BaseParser(ABC):
         # 先頭と末尾の空白を削除
         text = text.strip()
         return text
+
+    def convert_submitter_format(self, value: str) -> str:
+        """
+        議案提出者の表記を変換する。
+        例: 「◯◯ ◯◯君外八名」→「◯◯ ◯◯(ほか8名)」
+
+        Args:
+            value (str): 元の文字列
+
+        Returns:
+            str: 変換後の文字列
+        """
+        if not value:
+            return value
+
+        pattern = r"^(.*?)\s*君?\s*外([〇一二三四五六七八九十百千]+)名$"
+        match = re.search(pattern, value.strip())
+
+        if match:
+            name_part = match.group(1).replace("　", " ").strip()
+            kanji_number = match.group(2)
+            try:
+                # 漢数字を正規化（全角数字に変換）
+                normalized_number = jaconv.z2h(kanji_number, digit=True, ascii=False)
+                number = kanjize.kanji2number(normalized_number)
+                return f"{name_part}(ほか{number}名)"
+            except Exception as e:
+                logger.error(
+                    f"漢数字変換エラー: 入力値={kanji_number}, エラー={str(e)}"
+                )
+                # 変換できない場合はそのまま返す
+                return value
+
+        return value

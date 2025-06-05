@@ -10,18 +10,19 @@ from sqlalchemy.orm import sessionmaker
 # SQLAlchemy Base
 Base = declarative_base()
 
+
 class DatabaseConnection:
     """データベース接続の共通クラス"""
-    
+
     @staticmethod
     def get_connection_params() -> Dict[str, str]:
         """環境変数からデータベース接続情報を取得"""
         return {
-            'dbname': os.getenv('POSTGRES_DB', 'mydb'),
-            'user': os.getenv('POSTGRES_USER', 'postgres'),
-            'password': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-            'host': os.getenv('POSTGRES_HOST', 'localhost'),
-            'port': os.getenv('POSTGRES_PORT', '5432')
+            "dbname": os.getenv("POSTGRES_DB", "politics_dot_watch"),
+            "user": os.getenv("POSTGRES_USER", "postgres"),
+            "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
+            "host": os.getenv("POSTGRES_HOST", "localhost"),
+            "port": os.getenv("POSTGRES_PORT", "5432"),
         }
 
     @staticmethod
