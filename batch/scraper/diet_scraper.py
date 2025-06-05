@@ -95,7 +95,7 @@ class DietScraper(BaseScraper):
         soup = self.get_page_content(url)
         parser = BillListParser(soup.encode())
         bill_list = parser.parse()
-        DietSessionDao.save_bills(bill_list, session)
+        DietSessionDao.save(bill_list, session)
 
         return bill_list
 
