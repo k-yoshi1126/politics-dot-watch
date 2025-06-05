@@ -28,46 +28,50 @@ class BillContentInfoUrlDao:
 
                     saved_items = []
                     for content_info in content_info_list:
-                        # 複合キーで既存データを確認
-                        cur.execute(
-                            """
-                            SELECT COUNT(*) FROM "BillContentInfoUrl"
-                            WHERE "submitSession" = %s AND number = %s AND text = %s
-                        """,
-                            (submit_session, number, content_info["テキスト"]),
-                        )
+                        try:
+                            # 複合キーで既存データを確認
+                            cur.execute(
+                                """
+                                SELECT COUNT(*) FROM "BillContentInfoUrl"
+                                WHERE "submitSession" = %s AND number = %s AND text = %s
+                            """,
+                                (submit_session, number, content_info["テキスト"]),
+                            )
 
-                        if cur.fetchone()[0] == 0:
-                            # データが存在しない場合のみ追加
-                            insert_query = """
-                                INSERT INTO "BillContentInfoUrl" (
-                                    "submitSession", number, text, url,
-                                    "createdAt", "updatedAt"
-                                ) VALUES (
-                                    %s, %s, %s, %s, %s, %s
+                            if cur.fetchone()[0] == 0:
+                                # データが存在しない場合のみ追加
+                                insert_query = """
+                                    INSERT INTO "BillContentInfoUrl" (
+                                        "submitSession", number, text, url,
+                                        "createdAt", "updatedAt"
+                                    ) VALUES (
+                                        %s, %s, %s, %s, %s, %s
+                                    )
+                                """
+
+                                # データを整形
+                                values = (
+                                    submit_session,
+                                    number,
+                                    content_info["テキスト"],
+                                    content_info["URL"],
+                                    current_time,  # createdAt
+                                    current_time,  # updatedAt
                                 )
-                            """
 
-                            # データを整形
-                            values = (
-                                submit_session,
-                                number,
-                                content_info["テキスト"],
-                                content_info["URL"],
-                                current_time,  # createdAt
-                                current_time,  # updatedAt
-                            )
-
-                            cur.execute(insert_query, values)
-                            conn.commit()
-                            saved_items.append(content_info)
-                            print(
-                                f"✅ 議案本文情報リンクをデータベースに保存しました: {content_info['テキスト']}"
-                            )
-                        else:
-                            print(
-                                f"ℹ️ 既存の議案本文情報リンクが存在するため、スキップしました: {content_info['テキスト']}"
-                            )
+                                cur.execute(insert_query, values)
+                                conn.commit()
+                                saved_items.append(content_info)
+                                print(
+                                    f"✅ 議案本文情報リンクをデータベースに保存しました: {content_info['テキスト']}"
+                                )
+                            else:
+                                print(
+                                    f"ℹ️ 既存の議案本文情報リンクが存在するため、スキップしました: {content_info['テキスト']}"
+                                )
+                        except Exception as e:
+                            conn.rollback()
+                            raise e
 
                     return saved_items
 
