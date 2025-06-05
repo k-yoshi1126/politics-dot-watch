@@ -4,8 +4,7 @@ from typing import Dict
 import psycopg2
 from psycopg2.extras import execute_values
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # SQLAlchemy Base
 Base = declarative_base()

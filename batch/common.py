@@ -1,12 +1,13 @@
 import re
+import os
 from datetime import datetime
 from typing import List, Optional, Dict
-from urllib.parse import urljoin
 import logging
-import os
 
 import requests
 from bs4 import BeautifulSoup
+from rich.console import Console
+from rich.table import Table
 
 # ログ設定
 log_level = os.getenv("LOG_LEVEL", "INFO")
