@@ -67,4 +67,6 @@ class DietSessionDao:
 
         except Exception as e:
             print(f"❌ データベース保存エラー: {e}")
+            if "conn" in locals():
+                conn.rollback()
             raise
