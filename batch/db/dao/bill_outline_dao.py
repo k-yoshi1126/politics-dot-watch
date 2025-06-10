@@ -3,7 +3,7 @@ from typing import Dict, Union
 import psycopg2
 from psycopg2.extras import execute_values
 
-from db.base import DatabaseConnection
+from ..base import DatabaseConnection
 
 
 class BillOutlineDao:
@@ -13,6 +13,11 @@ class BillOutlineDao:
     def save(outline_data: Dict[str, str], submit_session: int, number: int) -> None:
         """スクレイピングした要綱をデータベースに保存"""
         try:
+            # 空辞書の場合はスキップ
+            if not outline_data:
+                print(f"ℹ️ 要綱データが空のため、スキップしました")
+                return
+
             # データベースに接続
             with DatabaseConnection.get_connection() as conn:
                 with conn.cursor() as cur:

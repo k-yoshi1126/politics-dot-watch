@@ -1,4 +1,6 @@
-"""データベースアクセスオブジェクトパッケージ"""
+"""
+データアクセスオブジェクト（DAO）モジュール
+"""
 
 from .diet_session_dao import DietSessionDao
 from .bill_progress_dao import BillProgressDao
