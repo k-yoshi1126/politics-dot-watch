@@ -130,9 +130,16 @@ export default async function BillsPage({ searchParams }: BillsPageProps) {
     });
 
     // 各法案の詳細なBillProgress情報を取得し、提出日を決定
-    // 注意: このアプローチはN+1問題を引き起こす可能性があります。
-    // パフォーマンスが問題になる場合は、より効率的なクエリ設計を検討する必要があります。
     bills = await Promise.all(dbBills.map(async (bill) => {
+      // BillAISummaryを取得
+      const billAISummary = await prisma.billAISummary.findUnique({
+        where: {
+          submitSession_number: {
+            submitSession: bill.submitSession,
+            number: bill.number
+          }
+        }
+      });
 
       const billProgressEntries = await prisma.billProgress.findMany({
         where: {
@@ -148,7 +155,7 @@ export default async function BillsPage({ searchParams }: BillsPageProps) {
 
       const submittedDateFromProgress = billProgressEntries.length > 0
         ? billProgressEntries[0].houseReviewDate?.toLocaleDateString('ja-JP') || "不明"
-        : "不明"; // 条件を満たさない場合は「不明」
+        : "不明";
 
       // 提出者と提出会派は、BillProgressテーブルから取得可能な最初のエントリを使用
       const submitterInfo = await prisma.billProgress.findFirst({
@@ -161,16 +168,16 @@ export default async function BillsPage({ searchParams }: BillsPageProps) {
           submitterParty: true
         },
         orderBy: {
-          session: 'asc' // 複数ある場合、最も古いセッションの情報を使用
+          session: 'asc'
         }
       });
 
       return {
         id: `bill-${bill.submitSession}-${bill.number}`,
-        title: bill.title,
-        summary: "法案の要約情報は現在準備中です。", // 要約情報はDBにないため、ハードコーディング
+        title: billAISummary?.titleSummary || bill.title,
+        summary: billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
         status: bill.status,
-        category: "デジタル", // カテゴリはDBにないため、ハードコーディング
+        category: "デジタル",
         submittedDate: submittedDateFromProgress,
         submittedBy: submitterInfo?.submitter || "不明",
         submitterParty: submitterInfo?.submitterParty || "不明"

@@ -111,6 +111,7 @@ model BillSubmitContent {
   reason                    String   @db.Text  // 理由
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
+  billAISummary            BillAISummary?
 
   @@unique([submitSession, number])
 }
@@ -123,6 +124,7 @@ model BillOutline {
   outline                   String   @db.Text  // 要綱
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
+  billAISummary            BillAISummary?
 
   @@unique([submitSession, number])
 }
@@ -199,4 +201,21 @@ model File {
   uploaderId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model BillAISummary {
+  id                Int               @id @default(autoincrement())
+  submitSession     Int
+  number            Int
+  titleSummary      String
+  shortSummary      String
+  longSummary       String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  billOutline       BillOutline       @relation(fields: [submitSession, number], references: [submitSession, number], map: "BillAISummary_BillOutline")
+  billSubmitContent BillSubmitContent @relation(fields: [submitSession, number], references: [submitSession, number], map: "BillAISummary_BillSubmitContent")
+
+  @@unique([submitSession, number])
+  @@index([submitSession])
+  @@index([number])
 }

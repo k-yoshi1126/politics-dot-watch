@@ -16,8 +16,16 @@ import React from 'react'
 
 // Define the type that matches the result of the Prisma query
 type BillProgressWithDietSession = Prisma.BillProgressGetPayload<{
-  include: { dietSessionInfo: true }
-}>;
+  include: { 
+    dietSessionInfo: true;
+  }
+}> & {
+  billAISummary?: {
+    titleSummary: string | null;
+    shortSummary: string | null;
+    longSummary: string | null;
+  } | null;
+};
 
 export default async function Home(): Promise<React.JSX.Element> {
   const session = await getServerSession(authOptions)
@@ -63,23 +71,39 @@ export default async function Home(): Promise<React.JSX.Element> {
 
     if (latestSubmitSession) {
       // 最新の提出国会回次の法案を取得（メインカラム用）
-      // BillProgressを複数取得するため、DietSessionInfoから直接取得するのではなく、
-      // BillProgressからsubmitSessionとnumberでフィルタリングして取得し、DietSessionInfoをincludeする形に変更
       mainBills = await prisma.billProgress.findMany({
         where: {
           submitSession: latestSubmitSession.submitSession
-          // DietSessionInfoのリレーションではなくBillProgress自体を複数取得するため、numberでのフィルタリングは後で行う
         },
-        take: 4, // 注目の法案1件と最新の法案3件分
+        take: 4,
         orderBy: {
-          number: 'asc' // 法案番号でソート
+          number: 'asc'
         },
         include: {
-          dietSessionInfo: true // DietSessionInfo情報も取得
+          dietSessionInfo: true
         },
-        distinct: ['number'] // 法案番号の重複を排除
+        distinct: ['number']
       });
-      console.log('メインカラム用の法案データ:', mainBills);
+
+      // 各法案のBillAISummaryを取得
+      const billAISummaries = await Promise.all(
+        mainBills.map(bill =>
+          prisma.billAISummary.findUnique({
+            where: {
+              submitSession_number: {
+                submitSession: bill.submitSession,
+                number: bill.number
+              }
+            }
+          })
+        )
+      );
+
+      // BillAISummaryのデータをmainBillsにマージ
+      mainBills = mainBills.map((bill, index) => ({
+        ...bill,
+        billAISummary: billAISummaries[index]
+      }));
     }
   } catch (error) {
     console.error('メインカラム用の法案データの取得に失敗しました:', error);
@@ -100,23 +124,39 @@ export default async function Home(): Promise<React.JSX.Element> {
 
     if (latestSubmitSession) {
       // 最新の提出国会回次の法案を取得（サイドカラム用）
-      // BillProgressを複数取得するため、DietSessionInfoから直接取得するのではなく、
-      // BillProgressからsubmitSessionとnumberでフィルタリングして取得し、DietSessionInfoをincludeする形に変更
       sideBills = await prisma.billProgress.findMany({
         where: {
           submitSession: latestSubmitSession.submitSession
-           // DietSessionInfoのリレーションではなくBillProgress自体を複数取得するため、numberでのフィルタリングは後で行う
         },
         take: 5,
         orderBy: {
-          number: 'asc' // 法案番号でソート
+          number: 'asc'
         },
         include: {
-          dietSessionInfo: true // DietSessionInfo情報も取得
+          dietSessionInfo: true
         },
-        distinct: ['number'] // 法案番号の重複を排除
+        distinct: ['number']
       });
-      console.log('サイドカラム用の法案データ:', sideBills);
+
+      // 各法案のBillAISummaryを取得
+      const billAISummaries = await Promise.all(
+        sideBills.map(bill =>
+          prisma.billAISummary.findUnique({
+            where: {
+              submitSession_number: {
+                submitSession: bill.submitSession,
+                number: bill.number
+              }
+            }
+          })
+        )
+      );
+
+      // BillAISummaryのデータをsideBillsにマージ
+      sideBills = sideBills.map((bill, index) => ({
+        ...bill,
+        billAISummary: billAISummaries[index]
+      }));
     }
   } catch (error) {
     console.error('サイドカラム用の法案データの取得に失敗しました:', error);
@@ -147,12 +187,10 @@ export default async function Home(): Promise<React.JSX.Element> {
   // 注目の法案（最新の法案）
   const featuredBill = {
     id: mainBills[0] ? `bill-${mainBills[0].submitSession}-${mainBills[0].number}` : "不明",
-    title: mainBills[0]?.billTitle || mainBills[0]?.dietSessionInfo?.title || "法案情報なし",
-    summary: "法案の要約情報は現在準備中です。",
+    title: mainBills[0]?.billAISummary?.titleSummary || mainBills[0]?.billTitle || mainBills[0]?.dietSessionInfo?.title || "法案情報なし",
+    summary: mainBills[0]?.billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
     status: mainBills[0]?.dietSessionInfo?.status || "不明",
-    category: "デジタル", // ハードコーディング
-    // submittedDateをBillProgressから取得するように変更
-    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接mainBills[0]を配列として渡す
+    category: "デジタル",
     submittedDate: getSubmittedDate(mainBills[0] ? [mainBills[0]] : null),
     submittedBy: mainBills[0]?.submitter || "不明",
     curator: "政治ドットウォッチ編集部",
@@ -161,12 +199,10 @@ export default async function Home(): Promise<React.JSX.Element> {
   // 最新の法案（2番目以降の法案）
   const recentBills = mainBills.slice(1, 4).map(bill => ({
     id: `bill-${bill.submitSession}-${bill.number}`,
-    title: bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
-    summary: "法案の要約情報は現在準備中です。",
+    title: bill.billAISummary?.titleSummary || bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
+    summary: bill.billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
     status: bill.dietSessionInfo?.status || "不明",
-    category: "デジタル", // ハードコーディング
-     // submittedDateをBillProgressから取得するように変更
-    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接billを配列として渡す
+    category: "デジタル",
     submittedDate: getSubmittedDate([bill]),
     submittedBy: bill.submitter || "不明",
   }))
@@ -174,16 +210,14 @@ export default async function Home(): Promise<React.JSX.Element> {
   // 人気の法案（サイドカラム用）
   const popularBills = sideBills.map(bill => ({
     id: `bill-${bill.submitSession}-${bill.number}`,
-    title: bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
-    summary: "法案の要約情報は現在準備中です。",
+    title: bill.billAISummary?.titleSummary || bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
+    summary: bill.billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
     status: bill.dietSessionInfo?.status || "不明",
-    category: "デジタル", // ハードコーディング
-     // submittedDateをBillProgressから取得するように変更
-    // 該当法案番号のprogressを渡す際、findManyの結果からフィルタリングするのではなく、直接billを配列として渡す
+    category: "デジタル",
     submittedDate: getSubmittedDate([bill]),
     submitterParty: bill.submitterParty || "不明",
     submittedBy: bill.submitter || "不明",
-    voteCount: Math.floor(Math.random() * 1000) + 500, // 仮の投票数
+    voteCount: Math.floor(Math.random() * 1000) + 500,
   }))
 
   // ユーザーの投票情報から、featuredBillへの投票を取得

@@ -69,6 +69,16 @@ export default async function BillPage({ params }: BillPageProps) {
     }
   })
 
+  // BillAISummaryを取得
+  const billAISummary = await prisma.billAISummary.findUnique({
+    where: {
+      submitSession_number: {
+        submitSession: submitSession,
+        number: number
+      }
+    }
+  })
+
   // 法案の審議履歴を取得
   const billHistory = await prisma.dietSessionInfo.findMany({
     where: {
@@ -105,8 +115,8 @@ export default async function BillPage({ params }: BillPageProps) {
   // 法案データを整形
   const bill = {
     id: params.id,
-    title: dbBill.billTitle || "法案のタイトルは現在準備中です。",
-    summary: "法案の要約情報は現在準備中です。",
+    title: billAISummary?.titleSummary || dbBill.billTitle || "法案のタイトルは現在準備中です。",
+    summary: billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
     status: dbBill.dietSessionInfo?.status || "不明",
     category: "不明",
     submittedDate: submittedDateFromProgress || "不明",
@@ -115,7 +125,7 @@ export default async function BillPage({ params }: BillPageProps) {
     fullText: billContent?.content || "法案の全文は現在準備中です。",
     supplementaryProvisions: billContent?.supplementaryProvisions || "法案の附則は現在準備中です。",
     reason: billContent?.reason || "法案の理由は現在準備中です。",
-    aiSummary: "AIによる要約は現在準備中です。",
+    aiSummary: billAISummary?.longSummary || "AIによる要約は現在準備中です。",
     impactAreas: [
       "影響範囲の分析は現在準備中です。",
     ],
