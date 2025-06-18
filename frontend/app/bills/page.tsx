@@ -396,13 +396,13 @@ export default async function BillsPage({ searchParams }: BillsPageProps) {
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="md:w-1/5 flex-shrink-0">
                     <div className="aspect-[16/9] rounded-md overflow-hidden">
-                      <Image
+                      {/* <Image
                         src={`/naikaku.jpg?height=169&width=300&text=${encodeURIComponent(bill.category)}`}
                         alt={`${bill.category}のイメージ`}
                         width={300}
                         height={169}
                         className="w-full h-full object-cover"
-                      />
+                      /> */}
                     </div>
                   </div>
                   <div className="md:w-4/5">

@@ -150,14 +150,14 @@ export default async function BillPage({ params }: BillPageProps) {
           <Badge
             variant={
               bill.status === "成立" ? "default" :
-              bill.status === "衆議院で審議中" || bill.status === "参議院で審議中" || bill.status === "衆議院で閉会中審査" ? "secondary" :
-              bill.status === "撤回" ? "destructive" :
-              "outline"
+                bill.status === "衆議院で審議中" || bill.status === "参議院で審議中" || bill.status === "衆議院で閉会中審査" ? "secondary" :
+                  bill.status === "撤回" ? "destructive" :
+                    "outline"
             }
             className={
               bill.status === "成立" ? "bg-primary hover:bg-primary/90" :
-              bill.status === "撤回" ? "bg-destructive hover:bg-destructive/90" :
-              ""
+                bill.status === "撤回" ? "bg-destructive hover:bg-destructive/90" :
+                  ""
             }
           >
             {bill.status}
@@ -171,13 +171,13 @@ export default async function BillPage({ params }: BillPageProps) {
 
         {/* 法案イメージ画像 */}
         <div className="mb-4 rounded-lg overflow-hidden">
-          <Image
+          {/* <Image
             src={`/naikaku.jpg?height=450&width=800`}
             alt={`${bill.category}のイメージ`}
             width={800}
             height={450}
             className="w-full h-auto object-cover"
-          />
+          /> */}
         </div>
 
         <p className="text-gray-600 text-sm mb-4">{bill.summary}</p>
@@ -198,7 +198,7 @@ export default async function BillPage({ params }: BillPageProps) {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button variant="outline" size="sm" className="h-8 text-xs">
               <Share2 className="h-3 w-3 mr-1" />
               共有
@@ -213,12 +213,12 @@ export default async function BillPage({ params }: BillPageProps) {
               コメント
               <span className="ml-1">({bill.commentCount})</span>
             </Button>
-          </div>
+          </div> */}
         </div>
 
-        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+        {/* <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
           <VoteButtons billId={bill.id} initialVote={billVote} />
-        </div>
+        </div> */}
 
         <Tabs defaultValue="summary" className="mb-8">
           <TabsList className="mb-4 bg-transparent border-b border-gray-200 w-full justify-start gap-4 p-0 h-auto">
@@ -228,30 +228,6 @@ export default async function BillPage({ params }: BillPageProps) {
             >
               AI要約
             </TabsTrigger>
-            <TabsTrigger
-              value="full-text"
-              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
-            >
-              改正内容
-            </TabsTrigger>
-            <TabsTrigger
-              value="supplementary-provisions"
-              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
-            >
-              附則
-            </TabsTrigger>
-            <TabsTrigger
-              value="reason"
-              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
-            >
-              理由
-            </TabsTrigger>
-            {/* <TabsTrigger
-              value="impact"
-              className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
-            >
-              影響範囲
-            </TabsTrigger> */}
             <TabsTrigger
               value="timeline"
               className="text-sm data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none bg-transparent px-1 py-2 rounded-none"
@@ -266,38 +242,6 @@ export default async function BillPage({ params }: BillPageProps) {
               <div className="whitespace-pre-line text-gray-600 text-sm leading-relaxed">{bill.aiSummary}</div>
             </div>
           </TabsContent>
-
-          <TabsContent value="full-text" className="mt-0">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-bold mb-4">改正内容</h2>
-              <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.fullText}</div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="supplementary-provisions" className="mt-0">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-bold mb-4">附則</h2>
-              <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.supplementaryProvisions}</div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reason" className="mt-0">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-bold mb-4">理由</h2>
-              <div className="whitespace-pre-line text-gray-600 font-mono text-sm leading-relaxed">{bill.reason}</div>
-            </div>
-          </TabsContent>
-
-          {/* <TabsContent value="impact" className="mt-0">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
-              <h2 className="text-lg font-bold mb-4">影響範囲</h2>
-              <ul className="list-disc pl-5 space-y-2 text-gray-600 text-sm">
-                {bill.impactAreas.map((impact, index) => (
-                  <li key={index}>{impact}</li>
-                ))}
-              </ul>
-            </div>
-          </TabsContent> */}
 
           <TabsContent value="timeline" className="mt-0">
             <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -314,38 +258,6 @@ export default async function BillPage({ params }: BillPageProps) {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* {bill.relatedBills.length > 0 && (
-          <div>
-            <h2 className="section-title">関連法案</h2>
-            <div className="space-y-4">
-              {bill.relatedBills.map((relatedBill) => (
-                <div
-                  key={relatedBill.id}
-                  className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
-                      <Image
-                        src={`/naikaku.jpg?height=450&width=800`}
-                        alt={`${relatedBill.category}のイメージ`}
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <Link
-                      href={`/bills/${relatedBill.id}`}
-                      className="font-medium hover:text-primary transition-colors text-sm"
-                    >
-                      {relatedBill.title}
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )} */}
       </div>
     </div>
   )

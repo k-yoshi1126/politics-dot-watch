@@ -16,7 +16,7 @@ import React from 'react'
 
 // Define the type that matches the result of the Prisma query
 type BillProgressWithDietSession = Prisma.BillProgressGetPayload<{
-  include: { 
+  include: {
     dietSessionInfo: true;
   }
 }> & {
@@ -184,7 +184,7 @@ export default async function Home(): Promise<React.JSX.Element> {
     return filteredEntries[0].houseReviewDate?.toLocaleDateString('ja-JP') || "不明";
   };
 
-  // 注目の法案（最新の法案）
+  // 注目の法案（1番目の法案）
   const featuredBill = {
     id: mainBills[0] ? `bill-${mainBills[0].submitSession}-${mainBills[0].number}` : "不明",
     title: mainBills[0]?.billAISummary?.titleSummary || mainBills[0]?.billTitle || mainBills[0]?.dietSessionInfo?.title || "法案情報なし",
@@ -192,8 +192,7 @@ export default async function Home(): Promise<React.JSX.Element> {
     status: mainBills[0]?.dietSessionInfo?.status || "不明",
     category: "デジタル",
     submittedDate: getSubmittedDate(mainBills[0] ? [mainBills[0]] : null),
-    submittedBy: mainBills[0]?.submitter || "不明",
-    curator: "政治ドットウォッチ編集部",
+    submittedBy: mainBills[0]?.submitter || "不明"
   }
 
   // 最新の法案（2番目以降の法案）
@@ -207,8 +206,8 @@ export default async function Home(): Promise<React.JSX.Element> {
     submittedBy: bill.submitter || "不明",
   }))
 
-  // 人気の法案（サイドカラム用）
-  const popularBills = sideBills.map(bill => ({
+  // 最新の法案（サイドカラム用）
+  const latestBills = sideBills.map(bill => ({
     id: `bill-${bill.submitSession}-${bill.number}`,
     title: bill.billAISummary?.titleSummary || bill.billTitle || bill.dietSessionInfo?.title || "法案情報なし",
     summary: bill.billAISummary?.shortSummary || "法案の要約情報は現在準備中です。",
@@ -266,13 +265,13 @@ export default async function Home(): Promise<React.JSX.Element> {
             <div className="bill-card-featured bg-white">
               <div className="relative">
                 <div className="aspect-[16/9] bg-gray-100 flex items-center justify-center overflow-hidden">
-                  <Image
+                  {/* <Image
                     src={`/naikaku.jpg?height=450&width=800&text=${encodeURIComponent(featuredBill.category)}`}
                     alt={`${featuredBill.category}のイメージ`}
                     width={800}
                     height={450}
                     className="w-full h-full object-cover"
-                  />
+                  /> */}
                 </div>
               </div>
               <div className="p-4">
@@ -297,18 +296,18 @@ export default async function Home(): Promise<React.JSX.Element> {
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3" />
-                      <span>{featuredBill.curator}</span>
+                      <span>{featuredBill.submittedBy}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       <span>提出: {featuredBill.submittedDate}</span>
                     </div>
                   </div>
-                  <VoteButtons
+                  {/* <VoteButtons
                     billId={featuredBill.id}
                     compact
                     initialVote={featuredBillVote}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>
@@ -325,13 +324,13 @@ export default async function Home(): Promise<React.JSX.Element> {
                     <div className="flex flex-col md:flex-row gap-4">
                       <div className="md:w-1/4 flex-shrink-0">
                         <div className="aspect-[16/9] rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                          <Image
+                          {/* <Image
                             src={`/act.jpg?height=169&width=300&text=${encodeURIComponent(bill.category)}`}
                             alt={`${bill.category}のイメージ`}
                             width={300}
                             height={169}
                             className="w-full h-full object-cover"
-                          />
+                          /> */}
                         </div>
                       </div>
                       <div className="md:w-3/4">
@@ -365,11 +364,11 @@ export default async function Home(): Promise<React.JSX.Element> {
                               <span>{bill.submittedDate}</span>
                             </div>
                           </div>
-                          <VoteButtons 
+                          {/* <VoteButtons 
                             billId={bill.id} 
                             compact 
                             initialVote={billVote} 
-                          />
+                          /> */}
                         </div>
                       </div>
                     </div>
@@ -391,17 +390,17 @@ export default async function Home(): Promise<React.JSX.Element> {
           <div className="mb-8 bg-white p-4 rounded-lg border border-gray-200">
             <h2 className="section-title">最新の法案</h2>
             <div className="space-y-4">
-              {popularBills.map((bill, index) => (
-                <div key={bill.id} className={index < popularBills.length - 1 ? "pb-4 border-b border-gray-200" : ""}>
+              {latestBills.map((bill, index) => (
+                <div key={bill.id} className={index < latestBills.length - 1 ? "pb-4 border-b border-gray-200" : ""}>
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                      <Image
+                      {/* <Image
                         src={`/act.jpg?height=40&width=40&text=${encodeURIComponent(bill.category)}`}
                         alt={`${bill.category}のイメージ`}
                         width={40}
                         height={40}
                         className="w-full h-full object-cover"
-                      />
+                      /> */}
                     </div>
                     <div>
                       <h3 className="text-sm font-bold mb-1">
@@ -418,10 +417,6 @@ export default async function Home(): Promise<React.JSX.Element> {
                           {bill.status}
                         </Badge>
                         <span>{bill.category}</span>
-                        {/* <div className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          <span>{bill.submittedBy}</span>
-                        </div> */}
                       </div>
                       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                         <Landmark className="h-3 w-3" />
