@@ -1,32 +1,9 @@
-# Dependencies
-node_modules/
-.pnp/
-.pnp.js
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# プロジェクト全体の除外設定
 
-# Testing
-coverage/
-
-# Next.js
-.next/
-out/
-build/
-dist/
-
-# Environment files
+# Environment files (全プロジェクト共通)
 .env
 .env.*
 !.env.example
-
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
 
 # IDE
 .idea/
@@ -42,28 +19,13 @@ Thumbs.db
 postgres-data/
 minio-data/
 
-# Prisma
-prisma/*.db
-prisma/migrations/
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
+# Python (バッチ処理用)
+venv/
+*.pyc
+__pycache__/
+.pytest_cache/
 
 # Misc
 .cache/
 .temp/
 .tmp/
-
-# Vercel
-.vercel 
-
-# venv
-venv/
-
-# python cache
-*.pyc
-__pycache__/
-
-# pytest cache
-.pytest_cache/
