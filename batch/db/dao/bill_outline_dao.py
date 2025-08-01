@@ -1,7 +1,5 @@
 from datetime import datetime
-from typing import Dict, Union
-import psycopg2
-from psycopg2.extras import execute_values
+from typing import Dict
 
 from ..base import DatabaseConnection
 
@@ -15,7 +13,7 @@ class BillOutlineDao:
         try:
             # 空辞書の場合はスキップ
             if not outline_data:
-                print(f"ℹ️ 要綱データが空のため、スキップしました")
+                print("ℹ️ 要綱データが空のため、スキップしました")
                 return
 
             # データベースに接続
@@ -55,9 +53,9 @@ class BillOutlineDao:
 
                         cur.execute(insert_query, values)
                         conn.commit()
-                        print(f"✅ 要綱をデータベースに保存しました")
+                        print("✅ 要綱をデータベースに保存しました")
                     else:
-                        print(f"ℹ️ 既存の要綱が存在するため、スキップしました")
+                        print("ℹ️ 既存の要綱が存在するため、スキップしました")
 
         except Exception as e:
             print(f"❌ データベース保存エラー: {e}")

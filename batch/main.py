@@ -1,9 +1,7 @@
-from datetime import datetime
 import argparse
-from rich.console import Console
-from rich.table import Table
 from scraper.diet_scraper import DietScraper
 from display.bill_displayer import BillDisplayer
+import traceback
 
 
 def main():
@@ -44,7 +42,7 @@ def main():
     except KeyboardInterrupt:
         print("\n⚠️ ユーザーによって中断されました")
     except Exception as e:
-        print(f"❌ スクレイピング実行中にエラーが発生しました: {e}")
+        print(f"❌ スクレイピング実行中にエラーが発生しました: {e}\n{traceback.format_exc()}")
     finally:
         scraper.close_driver()
 

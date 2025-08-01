@@ -1,4 +1,4 @@
-from typing import Dict, Union, List
+from typing import Dict
 import logging
 from ..base_parser import BaseParser
 
@@ -54,7 +54,7 @@ class AmendmentParser(BaseParser):
             # h2タグの内容を除外
             h2_text = top_contents.get_text().strip()
             if amendment_text.startswith(h2_text):
-                amendment_text = amendment_text[len(h2_text) :].strip()
+                amendment_text = amendment_text[len(h2_text):].strip()
 
             # 修正案の内容が空でない場合のみ結果を返す
             if amendment_text:

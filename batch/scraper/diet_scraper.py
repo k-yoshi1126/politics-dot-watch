@@ -1,17 +1,11 @@
-import re
 import time
-from datetime import datetime
-from typing import List, Optional, Dict, Tuple
-from urllib.parse import urljoin
+from typing import List, Dict
 
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from common import BaseScraper
@@ -76,21 +70,21 @@ class DietScraper(BaseScraper):
             print(f"📄 第{session}回国会の議案情報をスクレイピング")
             bill_list = self.scrape_bill_list(session)
 
-            print(f"議案審議経過情報ページからデータ取得中...")
+            print("議案審議経過情報ページからデータ取得中...")
             self.scrape_progress_info(bill_list, session)
 
-            print(f"議案本文情報一覧ページからデータ取得中...")
+            print("議案本文情報一覧ページからデータ取得中...")
             self.scrape_content_info_list(bill_list)
 
-            print(f"法案ページからデータ取得中...")
+            print("法案ページからデータ取得中...")
 
-            print(f"要綱ページからデータ取得中...")
+            print("要綱ページからデータ取得中...")
         except Exception as e:
             print(f"❌ スクレイピングに失敗: {e}")
 
     def scrape_bill_list(self, session: str) -> List[List[str]]:
         """議案一覧をスクレイピング"""
-        print(f"議案一覧ページからデータ取得中...")
+        print("議案一覧ページからデータ取得中...")
         url = self.BILL_LIST_URL.format(session)
         soup = self.get_page_content(url)
         parser = BillListParser(soup.encode())

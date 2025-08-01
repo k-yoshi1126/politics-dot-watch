@@ -3,7 +3,7 @@ from datetime import date
 from typing import Dict, Optional, List, Union
 import logging
 import re
-from japanera import EraDate, Era
+from japanera import EraDate
 import chardet
 from abc import ABC, abstractmethod
 import jaconv

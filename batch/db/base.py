@@ -2,7 +2,6 @@ import os
 from typing import Dict
 
 import psycopg2
-from psycopg2.extras import execute_values
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 

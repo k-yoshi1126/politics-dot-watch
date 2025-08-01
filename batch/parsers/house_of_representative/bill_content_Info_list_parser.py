@@ -1,5 +1,4 @@
-from datetime import date
-from typing import Dict, Union, List
+from typing import Dict, List
 import logging
 from ..base_parser import BaseParser
 

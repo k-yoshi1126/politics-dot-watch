@@ -1,13 +1,11 @@
 import re
 import os
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional
 import logging
 
 import requests
 from bs4 import BeautifulSoup
-from rich.console import Console
-from rich.table import Table
 
 # ログ設定
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -85,5 +83,6 @@ class BaseScraper:
                 return datetime(western_year, month, day)
 
             return None
-        except:
+        except Exception as e:
+            print(e)
             return None

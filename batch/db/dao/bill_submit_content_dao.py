@@ -1,7 +1,5 @@
 from datetime import datetime
-from typing import Dict, Union
-import psycopg2
-from psycopg2.extras import execute_values
+from typing import Dict
 
 from db.base import DatabaseConnection
 
@@ -53,9 +51,9 @@ class BillSubmitContentDao:
 
                         cur.execute(insert_query, values)
                         conn.commit()
-                        print(f"✅ 提出時法律案をデータベースに保存しました")
+                        print("✅ 提出時法律案をデータベースに保存しました")
                     else:
-                        print(f"ℹ️ 既存の提出時法律案が存在するため、スキップしました")
+                        print("ℹ️ 既存の提出時法律案が存在するため、スキップしました")
 
         except Exception as e:
             print(f"❌ データベース保存エラー: {e}")

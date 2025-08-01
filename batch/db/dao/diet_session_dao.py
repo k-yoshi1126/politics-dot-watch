@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List
-import psycopg2
 from psycopg2.extras import execute_values
 
 from db.base import DatabaseConnection

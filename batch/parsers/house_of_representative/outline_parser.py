@@ -1,4 +1,4 @@
-from typing import Dict, Union, List
+from typing import Dict
 import logging
 from ..base_parser import BaseParser
 
@@ -67,7 +67,7 @@ class OutlineParser(BaseParser):
             # h2タグの内容を除外
             h2_text = top_contents.get_text().strip()
             if outline_text.startswith(h2_text):
-                outline_text = outline_text[len(h2_text) :].strip()
+                outline_text = outline_text[len(h2_text):].strip()
                 logger.debug(f"h2タグ除外後のテキスト: {repr(outline_text)}")
 
             # 要綱の内容が空でない場合のみ結果を返す

@@ -1,7 +1,5 @@
 from datetime import datetime
-from typing import Dict, Union, List, Tuple
-import psycopg2
-from psycopg2.extras import execute_values
+from typing import Dict, List
 
 from db.base import DatabaseConnection
 
