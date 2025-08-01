@@ -25,7 +25,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Environment files (プロジェクトルートの.gitignoreで管理)
+# env files
+.env*
+!.env.example
+
+# python vertual environment
+.venv/
+venv/
 
 # TypeScript
 *.tsbuildinfo
