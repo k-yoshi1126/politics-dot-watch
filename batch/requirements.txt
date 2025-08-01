@@ -11,4 +11,4 @@ sqlalchemy==2.0.25
 japanera==2.1.2
 chardet==5.2.0
 jaconv==0.3.4
-kanjize==1.5.0
+kanjize==1.6.1
